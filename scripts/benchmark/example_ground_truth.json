@@ -1,0 +1,16 @@
+{
+  "target": "http://localhost:3000",
+  "source": "EXAMPLE ONLY — replace with a real, verified vulnerability list for a target you control. A good source is a deliberately-vulnerable test app with a documented challenge/vulnerability list, e.g. OWASP Juice Shop (https://pwning.owasp-juice.shop/) or DVWA. Do not use this example file's contents as if they were real ground truth — they are illustrative only.",
+  "known_findings": [
+    {
+      "finding_type": "SQL Injection",
+      "url_contains": "/rest/products/search",
+      "note": "example entry — verify against your actual target before using"
+    },
+    {
+      "finding_type": "Cross Site Scripting",
+      "url_contains": "/#/search",
+      "note": "example entry — verify against your actual target before using"
+    }
+  ]
+}

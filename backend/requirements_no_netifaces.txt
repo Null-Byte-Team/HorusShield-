@@ -1,0 +1,40 @@
+# HorusShield 2.0 — Python Dependencies
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# Flask & Web
+Flask==3.1.0
+flask-socketio==5.4.1
+flask-cors==5.0.1
+werkzeug>=3.0.0
+requests==2.32.3
+
+# Native Window (replaces browser popup)
+pywebview==5.3.4
+
+# Network
+scapy==2.6.1
+psutil==6.1.1
+mac-vendor-lookup==0.1.12
+
+# AI / ML
+scikit-learn==1.6.1
+pandas==2.2.3
+numpy==1.26.4
+joblib==1.4.2
+
+# Graph / Mesh
+networkx==3.4.2
+
+# PDF Reports
+fpdf2==2.8.2
+matplotlib==3.9.3
+
+# Utilities
+python-dateutil==2.9.0
+colorama==0.4.6
+ipwhois==1.2.0
+
+# NOTE: Do NOT install eventlet or gevent —
+#       they break PyInstaller frozen EXE.
+#       flask-socketio uses async_mode='threading' (no extra deps needed).
+# netifaces removed — not needed

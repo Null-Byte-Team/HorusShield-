@@ -1,0 +1,117 @@
+═══════════════════════════════════════════════════════════════════
+  HorusShield 2.0 — Improvements Summary (v4-4 → v4-5)
+  Team NullByte · WE School · Alexandria, Egypt 🇪🇬
+═══════════════════════════════════════════════════════════════════
+
+── 1. database/db_manager.py ──────────────────────────────────────
+
+  CODE QUALITY
+  • Full PEP-484 type annotations on every method signature.
+  • Row conversion helpers (_row_to_dict / _rows_to_dicts) are static
+    methods — no accidental self captures.
+  • _TRAFFIC_FIELDS is a class-level tuple, defined once and reused.
+
+  DATA CORRECTNESS
+  • get_active_attacks_count() uses COUNT(*) with a WHERE clause —
+    the old version fetched all rows and called len().
+  • is_blocked() now auto-expires temporary blocks inline before
+    checking — previously expired blocks would still appear as active.
+  • _expire_blocks() is a dedicated helper called from is_blocked()
+    and cleanup_old_data(), keeping the logic in one place.
+  • PRAGMA busy_timeout=5000 added so concurrent writers don't crash
+    immediately on a locked DB; PRAGMA synchronous=NORMAL improves
+    throughput while remaining crash-safe with WAL mode.
+  • get_dashboard_stats() uses one DB call for attack distribution
+    instead of opening a second connection context.
+
+── 2. engine/network_scanner.py ───────────────────────────────────
+
+  CODE QUALITY
+  • Full type annotations.
+  • Scan strategies split into _arp_scan(), _socket_scan(),
+    _read_neighbor_table() — the old single arp_scan() method was
+    doing all three and was hard to test/modify.
+  • _build_device_dict() removes duplicated dict construction code.
+
+  DATA CORRECTNESS (fewer false positives / faster scan)
+  • _socket_scan() now uses ThreadPoolExecutor(max_workers=64) with
+    concurrent.futures — the old version used a plain threading.Thread
+    per host but waited for each to finish serially in some paths.
+  • Multi-port probe: a host is counted as alive only when it responds
+    to at least ONE of 9 well-known ports.  This eliminates routers
+    that respond to ARP but drop all TCP.
+  • _merge_devices() deduplicates first by MAC (canonical) then by IP,
+    so a device appearing in both the ARP sweep and the neighbor table
+    doesn't produce two rows.
+  • _read_neighbor_table() tries both `ip neigh` and `arp -n` on Linux,
+    falling back gracefully if either is absent.
+
+── 3. ai/security_scorer.py ───────────────────────────────────────
+
+  CODE QUALITY
+  • Component scorers split into five clearly-named private methods
+    instead of one long calculate() body.
+  • _RISKY_PORTS and penalty constants are module-level frozenset/float
+    constants — easy to tune.
+  • Full type annotations.
+
+  DATA CORRECTNESS
+  • open_ports is always returned as a list by db_manager; the scorer
+    still guards against raw JSON strings as a safety net.
+  • All component scores are clamped to [0, 100] before weighting.
+  • trend is now computed by _compute_trend() by diffing against the
+    most recent stored score — the old version hard-coded "stable" as
+    the default in all code paths.
+  • ai_confidence score deducts correctly only when the DB setting is
+    explicitly "false"; a missing key no longer incorrectly deducts.
+
+── 4. app.py ──────────────────────────────────────────────────────
+
+  • _startup_cleanup() extracted into a top-level helper.
+  • start_background_engines() is a named inner function with a clear
+    docstring — the old anonymous lambda-like target was harder to read.
+  • Thread named "Engines" so it's identifiable in thread dumps.
+  • AUTO BROWSER OPEN: in EXE (frozen) mode the app polls /api/health
+    and opens the default browser automatically once the server is
+    ready — no manual URL typing required.
+
+── 5. HorusShield.spec ────────────────────────────────────────────
+
+  • optimize=1 strips docstrings from bytecode → slightly smaller EXE.
+  • Comment clarifies console=True / False trade-off.
+
+── 6. New files ───────────────────────────────────────────────────
+
+  installer/HorusShield_Installer.nsi
+    NSIS installer script that produces HorusShield_Setup.exe:
+      • Welcome + directory selection + progress + finish pages
+      • Desktop shortcut + Start Menu folder
+      • Add/Remove Programs entry with version, publisher, URL
+      • Uninstaller that optionally keeps user data (DB/logs/reports)
+      • Requests admin privileges (needed for firewall operations)
+
+  build_and_package.bat
+    One-click build script:
+      Step 1 — pip install requirements + pyinstaller
+      Step 2 — clean old build artefacts
+      Step 3 — pyinstaller HorusShield.spec
+      Step 4 — makensis installer (skipped gracefully if NSIS absent)
+
+  run.bat
+    Dev-mode launcher (no EXE needed — runs python backend/app.py)
+
+═══════════════════════════════════════════════════════════════════
+  HOW TO DISTRIBUTE (full workflow)
+═══════════════════════════════════════════════════════════════════
+
+  1. Install NSIS  →  https://nsis.sourceforge.io
+  2. Run:  build_and_package.bat
+  3. Share:  installer\HorusShield_Setup.exe
+
+  The installer:
+    • Copies HorusShield.exe + HorusShield_UI.html to Program Files
+    • Creates Desktop + Start Menu shortcuts
+    • Appears in Windows Settings → Apps (with uninstall button)
+    • On launch, the EXE starts the backend server and opens the
+      browser at http://localhost:5000 automatically
+

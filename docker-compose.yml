@@ -1,0 +1,69 @@
+# ══════════════════════════════════════════════════════════════════
+# HorusShield 2.0 — docker-compose.yml
+# Team NullByte · WE School · Alexandria 🇪🇬
+# ══════════════════════════════════════════════════════════════════
+# Usage:
+#   cp .env.example .env      # fill in real values
+#   docker compose up --build
+#
+# The dashboard is then reachable at http://localhost:5050
+
+services:
+  horusshield:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: horusshield:2.0
+    container_name: horusshield
+    restart: unless-stopped
+
+    env_file:
+      - .env
+    environment:
+      # These two are fixed for the container regardless of what .env says —
+      # HORUS_HOST must be 0.0.0.0 to be reachable from outside the
+      # container, and HORUS_HEADLESS must be true since there's no display.
+      HORUS_HOST: "0.0.0.0"
+      HORUS_HEADLESS: "true"
+
+    ports:
+      - "${HORUS_PORT:-5050}:5050"
+
+    volumes:
+      # Persistent database + logs + generated reports, survives
+      # `docker compose down` / image rebuilds.
+      - horus_data:/data
+      - horus_reports:/app/backend/reports
+
+    # Network monitoring (scapy) needs raw-socket access. Uncomment the two
+    # lines below (and optionally `network_mode: host`) to enable real
+    # packet capture from the host's network. Left commented by default so
+    # `docker compose up` works out of the box without elevated privileges —
+    # without them, HorusShield still runs fine, it just won't see live
+    # network traffic (same as a permission-denied case on the desktop app).
+    # cap_add:
+    #   - NET_ADMIN
+    #   - NET_RAW
+    # network_mode: host
+
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:5050/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+  # Optional: OWASP ZAP daemon for V-8 Scanner's ZAP integration.
+  # Point HORUS_ZAP_URL=http://zap:8090 in .env to use it.
+  zap:
+    image: zaproxy/zap-stable:latest
+    container_name: horusshield-zap
+    profiles: ["vscanner"]   # only starts with: docker compose --profile vscanner up
+    command: zap.sh -daemon -host 0.0.0.0 -port 8090 -config api.disablekey=false -config api.key=${HORUS_ZAP_KEY:-}
+    ports:
+      - "8090:8090"
+    restart: unless-stopped
+
+volumes:
+  horus_data:
+  horus_reports:

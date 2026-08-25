@@ -1,0 +1,58 @@
+# ══════════════════════════════════════════════════════════════════
+# HorusShield 2.0 — .dockerignore
+# ══════════════════════════════════════════════════════════════════
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Database / logs / reports (mounted as volumes instead)
+backend/database/*.db
+backend/database/*.db-shm
+backend/database/*.db-wal
+backend/logs/*.log
+backend/reports/*.pdf
+backend/reports/vscans/*
+
+# Secrets / local env
+.env
+.env.local
+.horus_secret
+backend/.horus_secret
+
+# Git
+.git/
+.gitignore
+
+# Windows desktop/EXE build artifacts — irrelevant to the Docker image
+build/
+dist/
+*.spec
+*.exe
+installer/
+build_and_package.bat
+build_exe.bat
+run.bat
+setup_git.bat
+
+# Docs / misc text notes not needed at runtime
+*.md
+!README.md
+docs/
+tests/
+.github/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,18 @@
+[flake8]
+max-line-length = 100
+extend-ignore =
+    # E203: whitespace before ':' — conflicts with black's formatting
+    E203,
+    # W503: line break before binary operator — black's preferred style
+    W503,
+    # E501 handled per-file below where long lines are data/URLs, not code smell
+exclude =
+    .git,
+    __pycache__,
+    build,
+    dist,
+    venv,
+    .venv,
+    ai/models,
+    installer
+max-complexity = 20

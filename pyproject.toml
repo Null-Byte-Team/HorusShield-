@@ -1,0 +1,24 @@
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.git
+  | __pycache__
+  | build
+  | dist
+  | venv
+  | \.venv
+  | ai/models
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip = ["venv", ".venv", "build", "dist", "__pycache__"]
+known_first_party = [
+    "api", "ai", "auth", "database", "engine", "honeypot",
+    "mesh", "services", "utils", "vscanner", "config", "app",
+]

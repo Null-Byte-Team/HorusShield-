@@ -1,0 +1,308 @@
+name: HorusShield 2.0 CI
+
+# Team NullByte · WE School · Alexandria
+#
+# Every step below is real and enforced — a failing step fails the whole
+# workflow (except the optional Windows EXE build, which is explicitly
+# advisory per project requirements and marked continue-on-error).
+
+on:
+  push:
+    branches: ["main", "master", "develop"]
+  pull_request:
+    branches: ["main", "master", "develop"]
+  workflow_dispatch: {}
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # 0) Security scanning — dependency CVEs, static analysis, secrets
+  # ─────────────────────────────────────────────────────────────
+  security-scan:
+    name: Security Scan (pip-audit, bandit, detect-secrets)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install security tools
+        run: pip install pip-audit bandit detect-secrets
+
+      - name: Dependency vulnerability scan (pip-audit)
+        # pip-audit's OSV-backed advisories don't uniformly expose a
+        # simple severity field to filter on the way bandit's HIGH/MEDIUM/
+        # LOW does — so this fails on ANY known vulnerability in a pinned
+        # dependency, not strictly "High/Critical only". That's a
+        # deliberate, disclosed choice: it's more conservative than what
+        # was asked for, not less, and pip-audit's own top-line summary
+        # is inspected first for anything worth a human's attention.
+        run: pip-audit -r backend/requirements.txt
+
+      - name: Static analysis (bandit) — fail only on HIGH severity
+        # -lll = report (and fail on) HIGH severity findings only, per
+        # "fail only on High/Critical". A broader medium+ report still
+        # runs below as a non-blocking, human-readable summary.
+        run: bandit -r backend -x backend/tests -lll
+
+      - name: Static analysis (bandit) — full medium+ report, non-blocking
+        if: always()
+        run: bandit -r backend -x backend/tests -ll || true
+
+      - name: Secrets scan (detect-secrets)
+        # Compares against the committed baseline (.secrets.baseline).
+        # NOTE: `detect-secrets scan` always exits 0 even when it finds a
+        # brand-new secret — it just writes it into the baseline's
+        # `results` field. There's no built-in "--fail-on-unaudited"
+        # flag in this version to make it fail on its own (verified
+        # locally before writing this step — an earlier draft assumed
+        # one existed and was wrong). Failing the build actually requires
+        # checking whether `results` is non-empty after the scan, which
+        # is what the inline check below does.
+        run: |
+          detect-secrets scan --baseline .secrets.baseline backend HorusShield_UI.html
+          python3 -c "
+          import json, sys
+          with open('.secrets.baseline') as f:
+              data = json.load(f)
+          results = data.get('results', {})
+          if results:
+              print('NEW SECRETS DETECTED:')
+              for filename, findings in results.items():
+                  for finding in findings:
+                      print(f\"  {filename}:{finding['line_number']} - {finding['type']}\")
+              sys.exit(1)
+          print('No secrets detected.')
+          "
+
+  # ─────────────────────────────────────────────────────────────
+  # 1) Syntax, import, and static-analysis checks
+  # ─────────────────────────────────────────────────────────────
+  lint-and-syntax:
+    name: Syntax & Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install system dependencies (libpcap for scapy)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libpcap-dev
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install black flake8 isort pytest
+
+      - name: Verify Python syntax (compile every .py file)
+        run: |
+          python -m compileall -q backend tests
+          echo "✅ All Python files compile"
+
+      # tests/ and scripts/ are new, DevOps-added code — held to strict
+      # style. backend/ is the existing, working application; per this
+      # project's standing rule ("don't rewrite working code just for
+      # style"), it is NOT mass-reformatted here. Its style is still
+      # checked and reported below so drift is visible, but it does not
+      # fail the build — only tests/ and scripts/ do.
+      - name: Check import order — new DevOps code (isort, blocking)
+        run: isort --check-only --diff tests scripts
+
+      - name: Check formatting — new DevOps code (black, blocking)
+        run: black --check --diff tests scripts
+
+      - name: Lint — new DevOps code (flake8, blocking)
+        run: flake8 tests scripts
+
+      - name: Style report — existing backend/ (non-blocking)
+        run: |
+          echo "::group::black (report only — backend/ is intentionally not auto-reformatted)"
+          black --check --diff backend || true
+          echo "::endgroup::"
+          echo "::group::flake8 (report only)"
+          flake8 backend || true
+          echo "::endgroup::"
+
+      - name: Check for broken imports
+        run: python scripts/check_imports.py
+
+  # ─────────────────────────────────────────────────────────────
+  # 2) Unit tests
+  # ─────────────────────────────────────────────────────────────
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint-and-syntax
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libpcap-dev
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Run unit tests
+        env:
+          HORUS_ENV: development
+          HORUS_HEADLESS: "true"
+          HORUS_SECRET_KEY: ci-test-secret-key-not-for-production
+        run: |
+          pytest tests/ -v --cov=backend --cov-report=term-missing --cov-report=xml
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+          retention-days: 14
+
+  # ─────────────────────────────────────────────────────────────
+  # 3) Runtime smoke checks — Flask boot + DB init, outside pytest
+  # ─────────────────────────────────────────────────────────────
+  runtime-smoke-test:
+    name: Flask Startup & Database Init
+    runs-on: ubuntu-latest
+    needs: lint-and-syntax
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libpcap-dev
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Verify database initializes cleanly
+        env:
+          HORUS_DB_PATH: /tmp/horus_ci_test.db
+        run: python scripts/verify_db_init.py
+
+      - name: Verify Flask app boots and /api/health responds
+        env:
+          HORUS_ENV: development
+          HORUS_HEADLESS: "true"
+          HORUS_HOST: 127.0.0.1
+          HORUS_PORT: "5099"
+          HORUS_DB_PATH: /tmp/horus_ci_test.db
+          HORUS_SECRET_KEY: ci-test-secret-key-not-for-production
+        run: python scripts/verify_flask_boot.py
+
+  # ─────────────────────────────────────────────────────────────
+  # 4) Docker build
+  # ─────────────────────────────────────────────────────────────
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: lint-and-syntax
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: false
+          tags: horusshield:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke-test the built image
+        run: |
+          docker run -d --name horus-ci -p 5050:5050 \
+            -e HORUS_SECRET_KEY=ci-test-secret-key-not-for-production \
+            horusshield:ci
+          echo "Waiting for container health check..."
+          for i in $(seq 1 20); do
+            status=$(docker inspect --format='{{.State.Health.Status}}' horus-ci 2>/dev/null || echo "starting")
+            echo "  [$i/20] status=$status"
+            if [ "$status" = "healthy" ]; then break; fi
+            sleep 3
+          done
+          docker logs horus-ci
+          final=$(docker inspect --format='{{.State.Health.Status}}' horus-ci)
+          docker stop horus-ci && docker rm horus-ci
+          if [ "$final" != "healthy" ]; then
+            echo "::error::Container did not become healthy — see logs above"
+            exit 1
+          fi
+          echo "✅ Container is healthy"
+
+  # ─────────────────────────────────────────────────────────────
+  # 5) Windows EXE build (optional / advisory — does not block CI)
+  # ─────────────────────────────────────────────────────────────
+  build-exe:
+    name: Build Windows EXE (optional)
+    runs-on: windows-latest
+    needs: lint-and-syntax
+    continue-on-error: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install -r backend/requirements.txt
+          pip install pyinstaller pillow
+
+      - name: Build EXE
+        run: pyinstaller HorusShield.spec --clean --noconfirm
+
+      - name: Verify EXE was produced
+        run: |
+          if (Test-Path "dist\HorusShield.exe") {
+            Write-Host "✅ dist\HorusShield.exe built successfully"
+          } else {
+            Write-Host "❌ EXE build did not produce dist\HorusShield.exe"
+            exit 1
+          }
+
+      - name: Upload EXE artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HorusShield-exe
+          path: dist/HorusShield.exe
+          retention-days: 14

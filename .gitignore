@@ -1,0 +1,140 @@
+# ══════════════════════════════════════════════
+# HorusShield 2.0 — .gitignore
+# Team NullByte · WE School · Alexandria 🇪🇬
+# ══════════════════════════════════════════════
+
+# ── Python ───────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+MANIFEST
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+
+# ── Virtual environments ──────────────────────
+venv/
+env/
+ENV/
+.venv/
+.env/
+Pipfile.lock
+
+# ── Database (don't commit live DB) ──────────
+backend/database/horus.db
+backend/database/horus.db-shm
+backend/database/horus.db-wal
+database/horus.db
+database/horus.db-shm
+database/horus.db-wal
+dist/database/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# ── Logs ─────────────────────────────────────
+*.log
+backend/logs/
+logs/
+dist/logs/
+
+# ── AI Models (large binary files) ───────────
+backend/ai/models/*.joblib
+ai/models/*.joblib
+dist/ai/
+
+# ── PyInstaller build artifacts ──────────────
+build/
+dist/HorusShield.exe
+*.exe
+*.spec.bak
+*.toc
+*.pkg
+*.pyz
+*.msi
+
+# ── Archives (never commit build/release archives) ──
+*.zip
+*.rar
+*.7z
+
+# ── Reports (generated PDFs) ─────────────────
+backend/reports/*.pdf
+backend/reports/*.html
+backend/reports/*.json
+backend/reports/vscans/*
+reports/*.pdf
+
+# ── Docker / DevOps ───────────────────────────
+requirements-docker.txt
+backend/.horus_secret
+.env.docker
+
+# ── Environment & secrets ────────────────────
+.env
+.env.local
+.env.production
+*.env
+secrets.py
+config_local.py
+
+# ── IDE / Editor ─────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── OS ───────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ── Test & Coverage ───────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+nosetests.xml
+test-results/
+
+# ── Node (if UI tools added later) ───────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+
+# ── KEEP THESE (force-include) ───────────────
+!backend/ai/models/.gitkeep
+!backend/database/.gitkeep
+!backend/logs/.gitkeep
+!backend/reports/.gitkeep

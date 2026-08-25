@@ -1,0 +1,106 @@
+═══════════════════════════════════════════════════════════════════
+  HORUSSHIELD 2.0 — BUGS FIXED (v4-3 → v4-4)
+  Team NullByte · WE School · Alexandria, Egypt 🇪🇬
+═══════════════════════════════════════════════════════════════════
+
+FIX #1 — CRITICAL: EXE Crash "ValueError: Invalid async_mode specified"
+─────────────────────────────────────────────────────────────────────────
+  File: backend/api/websocket.py
+  
+  Root Cause:
+    SocketIO was initialised with async_mode='eventlet'. When PyInstaller
+    bundles the app into a .exe, eventlet's monkey-patching cannot run in
+    the frozen environment → crash before the app even starts.
+    
+  Fix:
+    Changed async_mode='eventlet' → async_mode='threading'
+    Threading mode is always available (built into Python stdlib) and works
+    perfectly inside PyInstaller EXEs. Also added engineio_logger=False to
+    suppress noisy internal logs.
+
+FIX #2 — PyInstaller frozen path: config.py
+─────────────────────────────────────────────
+  File: backend/config.py
+  
+  Root Cause:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    In a frozen EXE, __file__ points to the temp extraction folder
+    (sys._MEIPASS), not to where the user installed the EXE. This caused
+    DATABASE_PATH, LOG_FILE, AI_MODEL_DIR and REPORT_OUTPUT_DIR to resolve
+    to wrong locations.
+  
+  Fix:
+    Added _get_base_dir() → uses sys.executable dir when frozen.
+    Added _get_bundle_dir() → uses sys._MEIPASS for bundled read-only assets
+    (AI .joblib models). Writable paths (DB, logs, reports) use exe dir.
+
+FIX #3 — PyInstaller frozen path: database/models.py
+──────────────────────────────────────────────────────
+  File: backend/database/models.py
+  
+  Fix: DB_DIR now resolves relative to sys.executable when frozen.
+       Added os.makedirs(DB_DIR, exist_ok=True) so the folder is always
+       created even on first run.
+
+FIX #4 — PyInstaller frozen path: utils/logger.py
+───────────────────────────────────────────────────
+  File: backend/utils/logger.py
+  
+  Fix: LOG_DIR now resolves relative to sys.executable when frozen.
+       Logs are written next to the EXE instead of inside _MEIPASS.
+
+FIX #5 — PyInstaller frozen path + robustness: app.py
+───────────────────────────────────────────────────────
+  File: backend/app.py
+  
+  Fixes:
+    • Added _get_ui_dir() — finds HorusShield_UI.html next to the EXE
+      when frozen, or two levels up from backend/ in dev mode.
+    • Added /< path:filename> fallback route for any static asset.
+    • Added allow_unsafe_werkzeug=True to sio.run() — required in newer
+      Flask/werkzeug when not running via gunicorn.
+    • Improved OSError handling (covers both Windows port-in-use code 10048
+      and Linux "address already in use").
+    • Added generic except clause to prevent silent crashes.
+
+FIX #6 — requirements.txt cleanup
+───────────────────────────────────
+  File: backend/requirements.txt
+  
+  Removed: eventlet (causes EXE crash — see Fix #1)
+  Added:   werkzeug>=3.0.0 (explicit pin for compatibility)
+  Note:    eventlet is NOT needed when async_mode='threading'.
+
+NEW — HorusShield.spec (PyInstaller build spec)
+────────────────────────────────────────────────
+  File: HorusShield_v43/HorusShield.spec
+  
+  Added a proper PyInstaller spec that:
+    • Bundles AI models, database schema, UI HTML, and all Python modules
+    • Adds engineio.async_drivers.threading as hiddenimport (critical!)
+    • Excludes eventlet and gevent (not needed, reduce EXE size)
+    • Specifies correct datas paths so files land in the right place
+
+NEW — run.bat & build_exe.bat
+──────────────────────────────
+  Files: HorusShield_v43/run.bat, build_exe.bat
+  
+  run.bat      → Launch directly from Python (development/testing)
+  build_exe.bat → One-click EXE build (installs deps + runs pyinstaller)
+
+═══════════════════════════════════════════════════════════════════
+  HOW TO RUN
+═══════════════════════════════════════════════════════════════════
+
+  Option A — Python (fastest):
+    1. cd HorusShield_v43
+    2. pip install -r backend\requirements.txt
+    3. Double-click run.bat  (or: python backend\app.py)
+    4. Open browser → http://localhost:5000
+
+  Option B — Build EXE:
+    1. Double-click build_exe.bat
+    2. Copy dist\HorusShield.exe + HorusShield_UI.html to same folder
+    3. Run HorusShield.exe
+
+═══════════════════════════════════════════════════════════════════
