@@ -17,7 +17,7 @@ vscanner_bp = Blueprint("vscanner", __name__)
 logger = get_logger("routes_vscanner", "api")
 report_gen = VScanReportGenerator()
 
-_VALID_TOOLS = {"nmap", "zap", "nikto"}
+_VALID_TOOLS = {"nmap"}
 _VALID_REPORT_FORMATS = {"pdf", "html", "json"}
 
 
@@ -103,13 +103,17 @@ def check_tools():
     """Return availability status for each external scanner tool."""
     manager = _get_manager()
     if manager is None:
-        return jsonify({"tools": {"nmap": False, "zap": False, "nikto": False}}), 200
+        return jsonify({"tools": {"nmap": False, "zap": False, "nikto": False, "sqlmap": False}, "details": {}}), 200
+    from vscanner.tool_discovery import health
+    status = health(
+        config.NMAP_PATH,
+        getattr(config, "ZAP_PATH", ""),
+        getattr(config, "NIKTO_PATH", ""),
+        getattr(config, "SQLMAP_PATH", "")
+    )
     return jsonify({
-        "tools": {
-            "nmap": manager.nmap.is_available(),
-            "zap": manager.zap.is_available(),
-            "nikto": manager.nikto.is_available(),
-        }
+        "tools": {name: details.get("available", False) for name, details in status.items()},
+        "details": status,
     }), 200
 
 
@@ -123,20 +127,18 @@ def start_scan():
         if err:
             return jsonify({"error": err}), 400
 
-        requested_tools = data.get("tools") or ["nmap", "zap", "nikto"]
+        requested_tools = data.get("tools") or ["nmap"]
         if not isinstance(requested_tools, list) or not all(isinstance(t, str) for t in requested_tools):
             return jsonify({"error": "tools must be a list of strings"}), 400
         tools = [t for t in requested_tools if t in _VALID_TOOLS]
         if not tools:
             return jsonify({"error": f"tools must include at least one of {sorted(_VALID_TOOLS)}"}), 400
 
-        active_scan = bool(data.get("active_scan", False))
-        authorized = bool(data.get("authorized_confirmation", False))
-        if active_scan and not authorized:
+        if data.get("active_scan"):
             return jsonify({
-                "error": "Active scan requires explicit authorization confirmation "
-                         "(authorized_confirmation=true) — it sends live test requests to the target."
+            "error": "Active scanning is not available. The web scanner currently supports Nmap only."
             }), 400
+        active_scan = False
         manager = _get_manager()
         if manager is None:
             return jsonify({"error": "Scanner not initialized"}), 500
@@ -275,24 +277,57 @@ def scan_history():
 @login_required
 def generate_and_download_report(scan_id, fmt):
     try:
-        fmt = (fmt or "").lower()
+        fmt = (fmt or "").lower().strip()
         if fmt not in _VALID_REPORT_FORMATS:
-            return jsonify({"error": f"format must be one of {sorted(_VALID_REPORT_FORMATS)}"}), 400
+            return jsonify({"success": False, "error": f"format must be one of {sorted(_VALID_REPORT_FORMATS)}"}), 400
         scan = db.get_vscan(scan_id)
         if not scan:
-            return jsonify({"error": "Scan not found"}), 404
+            return jsonify({"success": False, "error": "Scan not found"}), 404
         if not _is_owner_or_admin(scan, request.current_user):
-            return jsonify({"error": "You do not have access to this scan"}), 403
+            return jsonify({"success": False, "error": "You do not have access to this scan"}), 403
+
         path = report_gen.generate(scan_id, fmt)
         if not path or not os.path.exists(path):
-            return jsonify({"error": "Failed to generate report"}), 500
+            return jsonify({"success": False, "error": "Failed to generate report"}), 500
+
+        # Validate PDF signature if PDF requested
+        if fmt == "pdf":
+            try:
+                with open(path, "rb") as fp:
+                    if not fp.read(4).startswith(b"%PDF"):
+                        logger.error(f"Generated PDF file {path} has invalid signature")
+                        return jsonify({"success": False, "error": "PDF report generation failed"}), 500
+            except Exception as e:
+                logger.error(f"Failed to verify PDF signature for {path}: {e}")
+                return jsonify({"success": False, "error": "PDF report generation failed"}), 500
+
         db.add_audit_log(
-            action="report_generated", username=request.current_user.get("email", ""),
-            ip_address=_client_ip(), details=f"scan_id={scan_id} format={fmt}",
+            action="report_generated",
+            username=request.current_user.get("email", ""),
+            ip_address=_client_ip(),
+            details=f"scan_id={scan_id} format={fmt}",
         )
-        return send_file(path, as_attachment=True)
+
+        mimetypes = {
+            "pdf": "application/pdf",
+            "html": "text/html",
+            "json": "application/json",
+        }
+        safe_scan_id = re.sub(r"[^a-zA-Z0-9_\-]", "", str(scan_id))
+        download_filename = f"HorusShield_WebScan_Report_{safe_scan_id}.{fmt}"
+
+        # If user explicitly requests ?download=1, force attachment; otherwise display inline in browser viewer
+        as_attachment = request.args.get("download", "0").lower() in ("1", "true", "yes")
+
+        return send_file(
+            path,
+            mimetype=mimetypes.get(fmt, "application/octet-stream"),
+            as_attachment=as_attachment,
+            download_name=download_filename,
+        )
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        logger.warning(f"generate_and_download_report validation error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 400
     except Exception as e:
-        logger.error(f"generate_and_download_report: {e}")
-        return jsonify({"error": "Internal error"}), 500
+        logger.exception(f"Web Scanner report generation failed for scan_id={scan_id} format={fmt}: {e}")
+        return jsonify({"success": False, "error": "PDF report generation failed"}), 500

@@ -172,49 +172,25 @@ def mac_to_vendor(mac_address):
 
 
 def classify_device_type(hostname, vendor, open_ports=None):
-    """Classify device type based on available information."""
-    hostname_lower = hostname.lower() if hostname else ""
-    vendor_lower = vendor.lower() if vendor else ""
-    ports = open_ports or []
+    """Classify device type using the centralized Device Fingerprinting Engine."""
+    try:
+        from device_fingerprinting.classifier import device_classifier
+        from device_fingerprinting.oui import lookup_oui
 
-    # Router/Gateway detection
-    if any(w in hostname_lower for w in ['router', 'gateway', 'gw', 'rt-']):
-        return 'router'
-    if any(w in vendor_lower for w in ['cisco', 'netgear', 'tp-link', 'linksys', 'asus', 'dlink', 'huawei']):
-        if 80 in ports or 443 in ports or 8080 in ports:
-            return 'router'
+        oui_info = {"vendor": vendor or "Unknown", "reliable": bool(vendor and vendor != "Unknown")}
+        service_info = {"open_ports": open_ports or []}
+        result = device_classifier.classify(
+            ip="",
+            mac="",
+            hostname=hostname,
+            oui_info=oui_info,
+            service_info=service_info,
+        )
+        return result.device_type
+    except Exception:
+        # Graceful fallback if module isn't loaded
+        return "Unknown Device"
 
-    # Server detection
-    if any(w in hostname_lower for w in ['server', 'srv', 'nas', 'dc-']):
-        return 'server'
-    if any(p in ports for p in [22, 80, 443, 3306, 5432, 8080, 8443]):
-        port_count = len([p for p in ports if p in [22, 80, 443, 3306, 5432, 8080, 8443]])
-        if port_count >= 3:
-            return 'server'
-
-    # Phone detection
-    if any(w in hostname_lower for w in ['iphone', 'android', 'galaxy', 'pixel', 'phone', 'mobile']):
-        return 'phone'
-    if any(w in vendor_lower for w in ['apple', 'samsung', 'huawei', 'xiaomi', 'oneplus', 'oppo']):
-        return 'phone'
-
-    # Printer detection
-    if any(w in hostname_lower for w in ['printer', 'print', 'epson', 'hp-', 'canon']):
-        return 'printer'
-    if 9100 in ports or 515 in ports or 631 in ports:
-        return 'printer'
-
-    # IoT detection
-    if any(w in hostname_lower for w in ['cam', 'camera', 'thermostat', 'smart', 'iot', 'sensor', 'alexa', 'echo']):
-        return 'iot'
-
-    # PC/Laptop
-    if any(w in hostname_lower for w in ['desktop', 'laptop', 'pc', 'workstation', 'win-', 'mac-']):
-        return 'pc'
-    if any(w in vendor_lower for w in ['intel', 'dell', 'lenovo', 'hp', 'asus', 'msi', 'acer', 'microsoft']):
-        return 'pc'
-
-    return 'unknown'
 
 
 def severity_to_number(severity):

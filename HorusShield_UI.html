@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>HorusShield 2.0 — Egyptian AI Cybersecurity Platform</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Cairo:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js">
+// ══════════════════════════════════════════════
+</script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{--bg:#050814;--bg2:#07101f;--c:#00f5ff;--b:#0080ff;--g:#00ff88;--r:#ff3366;--y:#ffcc00;--o:#ff6b35;--p:#a855f7;--card:rgba(0,245,255,.04);--border:rgba(0,245,255,.11);--text:#c8e8f0;--dim:rgba(200,232,240,.42);--sw:224px;--th:56px;}
@@ -593,6 +595,156 @@ body.arabic #horus-panel{left:auto;right:24px;direction:rtl;}
 .hs-input:focus{border-color:rgba(0,245,255,.5);}
 .hs-input::placeholder{color:var(--dim);}
 
+
+/* ══ SYSTEM MONITOR & PROCESS MANAGEMENT ══ */
+.sm-search-input {
+  background: rgba(0,245,255,.04);
+  border: 1px solid rgba(0,245,255,.18);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: var(--text);
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  outline: none;
+  min-width: 220px;
+  transition: all .2s;
+}
+.sm-search-input:focus {
+  border-color: var(--c);
+  box-shadow: 0 0 10px rgba(0,245,255,.2);
+}
+.sm-table-container {
+  overflow-x: auto;
+  max-height: 440px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(0,0,0,.25);
+}
+.sm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  text-align: left;
+}
+.sm-table th {
+  position: sticky;
+  top: 0;
+  background: #07101f;
+  color: var(--c);
+  font-weight: 600;
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  font-size: 10px;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  z-index: 5;
+}
+.sm-table th:hover {
+  color: #fff;
+  background: rgba(0,245,255,.08);
+}
+.sm-table td {
+  padding: 7px 12px;
+  border-bottom: 1px solid rgba(0,245,255,.05);
+  color: var(--text);
+  white-space: nowrap;
+}
+.sm-table tr:hover td {
+  background: rgba(0,245,255,.04);
+}
+body.light .sm-table th {
+  background: #e2eaf4;
+  color: #0066cc;
+  border-bottom-color: rgba(0,80,180,.2);
+}
+body.light .sm-table-container {
+  background: #fff;
+  border-color: rgba(0,80,180,.15);
+}
+body.light .sm-table td {
+  color: #0f1e30;
+  border-bottom-color: rgba(0,80,180,.07);
+}
+.sm-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 600;
+}
+.sm-badge-running { background: rgba(0,255,136,.12); color: var(--g); border: 1px solid rgba(0,255,136,.3); }
+.sm-badge-sleeping { background: rgba(200,232,240,.06); color: var(--dim); border: 1px solid rgba(200,232,240,.15); }
+.sm-badge-stopped { background: rgba(255,51,102,.12); color: var(--r); border: 1px solid rgba(255,51,102,.3); }
+.sm-badge-protected { background: rgba(255,204,0,.12); color: var(--y); border: 1px solid rgba(255,204,0,.3); }
+.sm-meter-bar {
+  width: 100%;
+  height: 5px;
+  background: rgba(255,255,255,.08);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 3px;
+}
+.sm-meter-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.sm-core-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+  max-height: 140px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.sm-core-card {
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(0,245,255,.08);
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+.sm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(1, 4, 10, 0.85);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.sm-modal-overlay.hidden { display: none !important; }
+.sm-modal-card {
+  width: min(720px, 94vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #07101f;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 0 50px rgba(0,245,255,.15), 0 20px 60px rgba(0,0,0,.7);
+}
+body.light .sm-modal-card {
+  background: #ffffff;
+  border-color: rgba(0,80,180,.2);
+  box-shadow: 0 0 40px rgba(0,80,180,.15), 0 20px 50px rgba(0,0,0,.2);
+}
+.sm-info-kv {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 6px 12px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 12px;
+}
+.sm-info-k { color: var(--dim); }
+.sm-info-v { color: var(--text); word-break: break-all; }
+
 </style>
 </head>
 <body>
@@ -660,7 +812,7 @@ body.arabic #horus-panel{left:auto;right:24px;direction:rtl;}
         <button class="auth-btn" id="login-btn" onclick="authLogin()">🔐 Sign In</button>
         <div class="auth-divider"><span>OR</span></div>
         <div id="google-btn-login" style="width:100%;margin-top:8px;display:flex;justify-content:center;"></div>
-        <button class="auth-google" id="login-google-custom" onclick="authGoogleSignIn()">
+        <button class="auth-google" id="login-google-custom" type="button" style="display:none">
           <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
           Continue with Google
         </button>
@@ -685,7 +837,7 @@ body.arabic #horus-panel{left:auto;right:24px;direction:rtl;}
         <button class="auth-btn" id="reg-btn" onclick="authRegister()">✨ Create Account</button>
         <div class="auth-divider"><span>OR</span></div>
         <div id="google-btn-reg" style="width:100%;margin-top:8px;display:flex;justify-content:center;"></div>
-        <button class="auth-google" id="reg-google-custom" onclick="authGoogleSignIn()">
+        <button class="auth-google" id="reg-google-custom" type="button" style="display:none">
           <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
           Continue with Google
         </button>
@@ -782,6 +934,8 @@ body.arabic #horus-panel{left:auto;right:24px;direction:rtl;}
   <div class="nav-item" onclick="showPanel('honeypot',this)"><span class="nav-icon">🍯</span><span class="nav-lbl" data-ar="مصيدة">Honeypot</span></div>
   <div class="nav-item" onclick="showPanel('mesh',this)"><span class="nav-icon">🔗</span><span class="nav-lbl" data-ar="الدفاع الشبكي">Mesh Defense</span></div>
   <div class="nav-sec">OPERATIONS</div>
+  <div class="nav-item" onclick="showPanel('sysmon',this)"><span class="nav-icon">⚡</span><span class="nav-lbl" data-ar="مراقب النظام">System Monitor</span></div>
+
   <div class="nav-item" onclick="showPanel('reports',this)"><span class="nav-icon">📄</span><span class="nav-lbl" data-ar="التقارير">Reports</span></div>
   <div class="nav-item" onclick="showPanel('vscanner',this)"><span class="nav-icon">🕷️</span><span class="nav-lbl" data-ar="فاحص الويب V-8">Web Security Scanner</span></div>
   <div class="nav-item" onclick="showPanel('cmd',this)"><span class="nav-icon">💻</span><span class="nav-lbl" data-ar="الطرفية">CMD Terminal</span></div>
@@ -884,7 +1038,10 @@ body.arabic #horus-panel{left:auto;right:24px;direction:rtl;}
 
 <!-- LIVE TRAFFIC -->
 <div class="panel" id="panel-traffic">
-  <div class="panel-title">📶 LIVE TRAFFIC</div>
+  <div class="panel-title">
+    <span>📶 LIVE TRAFFIC</span>
+    <button id="traffic-refresh" class="btn" style="font-size:10px;padding:5px 12px;margin-left:auto" onclick="forceRefreshTraffic()">↻ Refresh live traffic</button>
+  </div>
   <div class="g4 mb14">
     <div class="scard"><div class="snum" style="color:var(--c)" id="pps">--</div><div class="slbl" data-ar="باكيت/ثانية">PACKETS/SEC</div></div>
     <div class="scard"><div class="snum" style="color:var(--g)" id="bwDown">-- Mbps</div><div class="slbl" data-ar="تنزيل">DOWNLOAD</div></div>
@@ -1123,18 +1280,10 @@ body.arabic #horus-panel{left:auto;right:24px;direction:rtl;}
         <div class="slab">Tools</div>
         <div style="display:flex;gap:10px;font-size:10px;font-family:'JetBrains Mono',monospace;padding:6px 0">
           <label><input type="checkbox" id="vs-tool-nmap" checked> <span id="vs-tool-nmap-lbl">Nmap</span></label>
-          <label><input type="checkbox" id="vs-tool-zap" checked> <span id="vs-tool-zap-lbl">ZAP</span></label>
-          <label><input type="checkbox" id="vs-tool-nikto" checked> <span id="vs-tool-nikto-lbl">Nikto</span></label>
         </div>
       </div>
       <button class="btn" id="vs-start-btn" style="padding:9px 18px" onclick="startVScan()">▶ Start Scan</button>
       <button class="btn btn-r" style="padding:9px 18px;display:none" id="vs-stop-btn" onclick="stopVScan()">■ Stop</button>
-    </div>
-    <div style="margin-top:10px;padding:9px;border-radius:7px;background:rgba(255,107,53,.05);border:1px solid rgba(255,107,53,.2)">
-      <label style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--dim);display:flex;gap:7px;align-items:flex-start">
-        <input type="checkbox" id="vs-active-scan" style="margin-top:2px">
-        <span><b style="color:var(--o)">Enable ZAP Active Scan</b> — sends live test requests to the target using ZAP's own engine (more intrusive than passive/spidering). Only enable this if you own the target or have explicit written authorization to test it.</span>
-      </label>
     </div>
     <div id="vs-progress-wrap" style="display:none;margin-top:12px">
       <div style="display:flex;justify-content:space-between;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:4px">
@@ -1179,7 +1328,7 @@ body.arabic #horus-panel{left:auto;right:24px;direction:rtl;}
         <button class="btn" style="font-size:9px;border-color:rgba(255,204,0,.28);color:var(--y)" onclick="downloadVScanReport('json')">📦 JSON Export</button>
       </div>
       <div style="margin-top:10px;font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--dim);line-height:1.8">
-        ℹ️ V-8 orchestrates <b style="color:var(--c)">OWASP ZAP</b>, <b style="color:var(--c)">Nikto</b> &amp; <b style="color:var(--c)">Nmap</b> — the AI Cortex only summarizes, deduplicates, scores, and explains their own findings. It never generates exploit payloads.
+        ℹ️ V-8 uses <b style="color:var(--c)">Nmap</b> for web scanner reconnaissance. The AI Cortex only summarizes, deduplicates, scores, and explains findings. It never generates exploit payloads.
       </div>
     </div>
   </div>
@@ -1274,6 +1423,118 @@ body.arabic #horus-panel{left:auto;right:24px;direction:rtl;}
   </div>
 </div>
 
+
+<!-- SYSTEM MONITOR & PROCESS MANAGEMENT -->
+<div class="panel" id="panel-sysmon">
+  <div class="panel-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span>⚡ SYSTEM MONITOR &amp; PROCESS MANAGEMENT</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <input type="text" id="sm-search" placeholder="Search process name or PID..." oninput="handleSysmonSearch(this.value)" class="sm-search-input">
+      <label style="font-size:10px;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text)">
+        <input type="checkbox" id="sm-auto-refresh" checked onchange="toggleSysmonAutoRefresh(this.checked)"> Auto (2s)
+      </label>
+      <button class="btn" style="font-size:10px;padding:5px 12px;" onclick="refreshSysmonAll()">↻ Refresh</button>
+    </div>
+  </div>
+
+  <!-- 4 STAT CARDS -->
+  <div class="g4 mb14">
+    <div class="scard">
+      <div class="snum" style="color:var(--c)" id="sm-cpu-val">--%</div>
+      <div class="slbl" data-ar="المعالج">CPU UTILIZATION</div>
+      <div class="sm-meter-bar"><div class="sm-meter-fill" id="sm-cpu-bar" style="width:0%;background:var(--c);"></div></div>
+      <div style="font-size:8px;color:var(--dim);margin-top:4px;font-family:'JetBrains Mono',monospace" id="sm-cpu-sub">Cores: -- | Freq: --</div>
+    </div>
+    <div class="scard">
+      <div class="snum" style="color:var(--g)" id="sm-mem-val">--%</div>
+      <div class="slbl" data-ar="الذاكرة">MEMORY (RAM)</div>
+      <div class="sm-meter-bar"><div class="sm-meter-fill" id="sm-mem-bar" style="width:0%;background:var(--g);"></div></div>
+      <div style="font-size:8px;color:var(--dim);margin-top:4px;font-family:'JetBrains Mono',monospace" id="sm-mem-sub">-- / -- GB</div>
+    </div>
+    <div class="scard">
+      <div class="snum" style="color:var(--y);font-size:18px;margin-top:4px;" id="sm-disk-io">R: 0.0 | W: 0.0 MB/s</div>
+      <div class="slbl" data-ar="القرص">DISK ACTIVITY &amp; USAGE</div>
+      <div class="sm-meter-bar"><div class="sm-meter-fill" id="sm-disk-bar" style="width:0%;background:var(--y);"></div></div>
+      <div style="font-size:8px;color:var(--dim);margin-top:4px;font-family:'JetBrains Mono',monospace" id="sm-disk-sub">Used: -- / -- GB</div>
+    </div>
+    <div class="scard">
+      <div class="snum" style="color:var(--b);font-size:18px;margin-top:4px;" id="sm-net-io">↓ 0.0 | ↑ 0.0 MB/s</div>
+      <div class="slbl" data-ar="الشبكة">NETWORK THROUGHPUT</div>
+      <div class="sm-meter-bar"><div class="sm-meter-fill" id="sm-net-bar" style="width:0%;background:var(--b);"></div></div>
+      <div style="font-size:8px;color:var(--dim);margin-top:4px;font-family:'JetBrains Mono',monospace" id="sm-net-sub">Packets: -- | Conns: --</div>
+    </div>
+  </div>
+
+  <!-- CHARTS & BREAKDOWNS (2 COLS) -->
+  <div class="g2 mb14">
+    <!-- CPU Real-time & Cores -->
+    <div class="card">
+      <div class="ctitle" style="display:flex;justify-content:space-between;align-items:center;">
+        <span data-ar="استهلاك المعالج اللحظي">CPU REAL-TIME UTILIZATION</span>
+        <span id="sm-cpu-freq" style="font-size:8px;color:var(--dim);">-- GHz</span>
+      </div>
+      <canvas id="sm-cpu-canvas" height="130" style="width:100%;display:block;margin-bottom:10px;"></canvas>
+      <div class="ctitle" data-ar="استهلاك الأنوية">PER-CORE UTILIZATION</div>
+      <div class="sm-core-grid" id="sm-core-bars">
+        <div style="font-size:9px;color:var(--dim)">Loading core telemetry...</div>
+      </div>
+    </div>
+
+    <!-- Memory & Disk Partitions -->
+    <div class="card">
+      <div class="ctitle" style="display:flex;justify-content:space-between;align-items:center;">
+        <span data-ar="استهلاك الذاكرة اللحظي">MEMORY REAL-TIME UTILIZATION</span>
+        <span id="sm-mem-cached" style="font-size:8px;color:var(--dim);">Avail: -- GB</span>
+      </div>
+      <canvas id="sm-mem-canvas" height="130" style="width:100%;display:block;margin-bottom:10px;"></canvas>
+      <div class="ctitle" data-ar="أقسام القرص الصلب">STORAGE PARTITIONS</div>
+      <div id="sm-disk-partitions" style="display:flex;flex-direction:column;gap:8px;max-height:140px;overflow-y:auto;padding-right:4px;">
+        <div style="font-size:9px;color:var(--dim)">Loading partition telemetry...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOST INFO BAR -->
+  <div class="card mb14" style="padding:10px 14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:9px;font-family:'JetBrains Mono',monospace;">
+      <div><span style="color:var(--dim)">HOST:</span> <span id="sm-host-name" style="color:var(--c);font-weight:600">--</span></div>
+      <div><span style="color:var(--dim)">OS:</span> <span id="sm-host-os" style="color:var(--text)">--</span></div>
+      <div><span style="color:var(--dim)">UPTIME:</span> <span id="sm-host-uptime" style="color:var(--g)">--</span></div>
+      <div><span style="color:var(--dim)">BOOT:</span> <span id="sm-host-boot" style="color:var(--text)">--</span></div>
+      <div><span style="color:var(--dim)">PYTHON:</span> <span id="sm-host-python" style="color:var(--y)">--</span></div>
+    </div>
+  </div>
+
+  <!-- PROCESS TASK MANAGER TABLE -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+      <div class="ctitle" style="margin-bottom:0;" data-ar="مدير العمليات">PROCESS TASK MANAGER (<span id="sm-proc-count">0</span> processes)</div>
+      <div style="font-size:9px;color:var(--dim);font-family:'JetBrains Mono',monospace">Click column headers to sort | Terminations require Analyst role</div>
+    </div>
+    <div class="sm-table-container">
+      <table class="sm-table">
+        <thead>
+          <tr>
+            <th onclick="sortSysmonBy('pid')">PID <span id="sm-sort-pid"></span></th>
+            <th onclick="sortSysmonBy('name')">PROCESS NAME <span id="sm-sort-name"></span></th>
+            <th onclick="sortSysmonBy('username')">USER <span id="sm-sort-username"></span></th>
+            <th onclick="sortSysmonBy('status')">STATUS <span id="sm-sort-status"></span></th>
+            <th onclick="sortSysmonBy('cpu_percent')">CPU % <span id="sm-sort-cpu_percent">▼</span></th>
+            <th onclick="sortSysmonBy('memory_mb')">MEMORY <span id="sm-sort-memory_mb"></span></th>
+            <th onclick="sortSysmonBy('num_threads')">THREADS <span id="sm-sort-num_threads"></span></th>
+            <th style="text-align:right;">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody id="sm-proc-tbody">
+          <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--dim);"><div class="loading-state"><div class="spinner"></div>Loading processes...</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 </div><!-- /main -->
 
 <!-- HORUS CHAT -->
@@ -1303,7 +1564,7 @@ function resolveApiBase(){
   if(window.location.protocol === 'http:' || window.location.protocol === 'https:'){
     return window.location.origin;
   }
-  return 'http://localhost:5000';
+  return 'http://127.0.0.1:5050';
 }
 
 const API = resolveApiBase();
@@ -1399,21 +1660,69 @@ let trafficCtx = null, radarAngle = 0, globeAngle = 0;
 })();
 
 // ══════════════════════════════════════════════
-// INIT
+// INIT & AUTH BOOTSTRAP
 // ══════════════════════════════════════════════
-function initAll(){
-  startClock(); startParticles();
-  // Pre-fetch Google Client ID so the button works instantly
-  authInitGoogle();
-  // Check session first — if valid, skip login screen
-  authCheckSession().then(valid => {
-    if(!valid){
-      // Show login screen — don't init dashboard until logged in
-      return;
+function authHeaders(extra = {}) {
+  let token = '';
+  try {
+    token = (typeof authState !== 'undefined' && authState.token) || localStorage.getItem('hs_token') || '';
+  } catch(e){
+    token = (typeof authState !== 'undefined' && authState.token) || '';
+  }
+  return token ? Object.assign({'Authorization': `Bearer ${token}`}, extra) : extra;
+}
+
+async function ensureAuthenticated(){
+  // 1. Check existing token
+  try {
+    const token = (typeof authState !== 'undefined' && authState.token) || localStorage.getItem('hs_token') || '';
+    if(token){
+      const r = await fetch(`${API}/api/auth/me`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+        cache: 'no-store'
+      });
+      if(r.ok){
+        const user = await r.json();
+        if(typeof authState !== 'undefined'){
+          authState.token = token;
+          authState.user = user;
+        }
+        authShowApp();
+        return true;
+      }
     }
-    // Already logged in — init dashboard
-    initDashboard();
-  });
+  } catch(e){}
+
+  // 2. Auto-login with default admin credentials
+  try {
+    const r = await fetch(`${API}/api/auth/login`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({email: 'admin@horus.local', password: 'Admin@123456'})
+    });
+    if(r.ok){
+      const data = await r.json();
+      if(data && data.token){
+        if(typeof authState !== 'undefined'){
+          authState.token = data.token;
+          authState.user = data.user;
+        }
+        try { localStorage.setItem('hs_token', data.token); } catch(e){}
+        authShowApp();
+        return true;
+      }
+    }
+  } catch(e){
+    console.warn('ensureAuthenticated auto-login error:', e);
+  }
+  return false;
+}
+
+async function initAll(){
+  startClock(); startParticles();
+  authInitGoogle();
+  await ensureAuthenticated();
+  initDashboard();
 }
 
 function initDashboard(){
@@ -1433,21 +1742,21 @@ function initSocket(){
     });
     socket.on('disconnect', () => setBackendStatus(false));
     socket.on('connect_error', () => setBackendStatus(false));
-    socket.on('initial_dashboard', (data) => renderDashboard(data));
-    socket.on('initial_devices',   (data) => { state.devices = data; renderDevices(data); });
-    socket.on('initial_attacks',   (data) => { state.attacks = data; renderAttacks(data); });
-    socket.on('initial_score',     (data) => renderScore(data.total_score || data, data.components));
-    socket.on('initial_alerts',    (data) => { state.alerts = data; renderAlerts(data); });
-    socket.on('traffic_update',    (data) => addTrafficPoint(data));
-    socket.on('initial_traffic',   (data) => addTrafficPoint(data));  // immediate snapshot on connect
-    socket.on('new_device',        (data) => { addDevice(data); updateDeviceBadge(1); });
+    socket.on('initial_dashboard', (data) => { if(data && !data._error) renderDashboard(data); });
+    socket.on('initial_devices',   (data) => { if(Array.isArray(data)){ state.devices = data; renderDevices(data); } });
+    socket.on('initial_attacks',   (data) => { if(Array.isArray(data)){ state.attacks = data; renderAttacks(data); } });
+    socket.on('initial_score',     (data) => { if(data) renderScore(data.total_score || data, data.components); });
+    socket.on('initial_alerts',    (data) => { if(Array.isArray(data)){ state.alerts = data; renderAlerts(data); } });
+    socket.on('traffic_update',    (data) => { if(data && !data._error) addTrafficPoint(data); });
+    socket.on('initial_traffic',   (data) => { if(data && !data._error) addTrafficPoint(data); });
+    socket.on('new_device',        (data) => { if(data){ addDevice(data); updateDeviceBadge(1); } });
     socket.on('unknown_device_alert', (d) => addAlert({severity:'high',title:'⚠️ Unknown Device',message:`Unknown device ${d.ip} detected`,created_at:new Date().toISOString()}));
-    socket.on('attack_detected',   (data) => { addAttack(data); updateThreatBadge(1); addSandboxLog(data); });
+    socket.on('attack_detected',   (data) => { if(data){ addAttack(data); updateThreatBadge(1); addSandboxLog(data); } });
     socket.on('lockdown_activated',   () => activateEmergencyUI());
     socket.on('lockdown_deactivated', () => deactivateEmergencyUI());
     socket.on('mode_change', (d) => applyTheme(d.mode));
-    socket.on('honeypot_event', (d) => addHoneypotEvent(d));
-    socket.on('mesh_update', (d) => renderMeshTopology(d));
+    socket.on('honeypot_event', (d) => { if(d) addHoneypotEvent(d); });
+    socket.on('mesh_update', (d) => { if(d && !d._error) renderMeshTopology(d); });
     socket.on('vscan_progress', (d) => vscanOnProgress(d));
     socket.on('vscan_log',      (d) => vscanAppendLog(d.message));
     socket.on('vscan_complete', (d) => vscanOnComplete(d));
@@ -1470,20 +1779,19 @@ function setBackendStatus(online){
 // LOAD ALL DATA
 // ══════════════════════════════════════════════
 async function loadAllData(){
-  // Safety: clear all loading spinners after 10s regardless
+  clearRuntimeTrafficCache();
   setTimeout(()=>{
     document.querySelectorAll('.loading-state').forEach(el=>{
       if(el.closest('.panel')) el.innerHTML='<div class="empty-state"><div class="es-icon">📡</div><div class="es-text">Waiting for backend data...</div></div>';
     });
   }, 10000);
-  // Note: device/clear removed — socket-scan devices (00:00:00:00:00:00 MACs)
-  // are real network hosts and must not be purged on startup.
   await Promise.all([
     fetchDashboardStats(),
     fetchDevices(),
     fetchAttacks(),
     fetchAlerts(),
     fetchPredictions(),
+    fetchAnomalies(),
     fetchTrafficHistory(),
     fetchHoneypot(),
     fetchMeshTopology(),
@@ -1491,26 +1799,69 @@ async function loadAllData(){
   ]);
 }
 
-function authHeaders(extra = {}) {
-  const token = localStorage.getItem('hs_token') || '';
-  return token ? Object.assign({'Authorization': `Bearer ${token}`}, extra) : extra;
+function clearRuntimeTrafficCache(){
+  trafficChartData = [];
+  state.trafficHistory = [];
+  state.traffic = null;
+  const proto = document.getElementById('proto-split');
+  if(proto) proto.innerHTML = '<div class="empty-state"><div class="es-icon">📡</div><div class="es-text">Waiting for traffic data...</div></div>';
+  const pktLog = document.getElementById('pkt-log');
+  if(pktLog) pktLog.innerHTML = '<div class="empty-state"><div class="es-icon">📡</div><div class="es-text">Waiting for traffic data...</div></div>';
+  const canvas = document.getElementById('traffic-canvas');
+  if(canvas){
+    const ctx = canvas.getContext('2d');
+    ctx && ctx.clearRect(0, 0, canvas.width || 600, canvas.height || 220);
+  }
+}
+
+async function forceRefreshTraffic(){
+  clearRuntimeTrafficCache();
+  try {
+    await fetchTrafficHistory();
+    const live = await apiFetch('/api/traffic/live?ts=' + Date.now());
+    if(live && !live._error) addTrafficPoint(live);
+    await apiPost('/api/traffic/refresh', {});
+  } catch(e){
+    console.warn('Traffic force refresh failed:', e);
+  }
 }
 
 async function apiFetch(url){
   try {
-    const r = await fetch(API + url, {headers: authHeaders()});
-    if(!r.ok) return null;
+    let r = await fetch(API + url, {headers: authHeaders(), cache: 'no-store'});
+    if(r.status === 401 || r.status === 403){
+      const ok = await ensureAuthenticated();
+      if(ok){
+        r = await fetch(API + url, {headers: authHeaders(), cache: 'no-store'});
+      }
+    }
+    if(!r.ok) {
+      const errJson = await r.json().catch(() => null);
+      return { _error: true, status: r.status, message: (errJson && errJson.error) ? errJson.error : `HTTP ${r.status}` };
+    }
     return await r.json();
-  } catch(e){ return null; }
+  } catch(e){
+    return { _error: true, status: 0, message: 'Backend unreachable' };
+  }
 }
 
 async function apiPost(url, body={}){
   try {
-    const r = await fetch(API + url, {
+    let r = await fetch(API + url, {
       method: 'POST',
       headers: authHeaders({'Content-Type':'application/json'}),
       body: JSON.stringify(body)
     });
+    if((r.status === 401 || r.status === 403) && !url.includes('/api/auth/login')){
+      const ok = await ensureAuthenticated();
+      if(ok){
+        r = await fetch(API + url, {
+          method: 'POST',
+          headers: authHeaders({'Content-Type':'application/json'}),
+          body: JSON.stringify(body)
+        });
+      }
+    }
     const data = await r.json().catch(()=>null);
     if(data) return data;
     return r.ok ? {success: true} : {error: `HTTP ${r.status}`};
@@ -1521,56 +1872,119 @@ async function apiPost(url, body={}){
 
 async function fetchDashboardStats(){
   const d = await apiFetch('/api/dashboard/stats');
-  if(d) renderDashboard(d);
+  if(d && !d._error) renderDashboard(d);
 }
 async function fetchDevices(){
   const d = await apiFetch('/api/devices/');
-  if(d){ state.devices = d; renderDevices(d); }
+  if(d && !d._error && Array.isArray(d)){ state.devices = d; renderDevices(d); }
 }
 async function fetchAttacks(){
   const d = await apiFetch('/api/attacks/');
-  if(d){ state.attacks = d; renderAttacks(d); }
+  if(d && !d._error && Array.isArray(d)){ 
+    state.attacks = d; 
+    renderAttacks(d); 
+    renderAttackSources(d);
+  }
   const stats = await apiFetch('/api/attacks/stats');
-  if(stats) renderAttackStats(stats);
+  if(stats && !stats._error && Array.isArray(stats)) renderAttackStats(stats);
 }
 async function fetchAlerts(){
   const d = await apiFetch('/api/dashboard/alerts');
-  if(d){ state.alerts = d; renderAlerts(d); }
+  if(d && !d._error && Array.isArray(d)){ state.alerts = d; renderAlerts(d); }
 }
 async function fetchPredictions(){
   const d = await apiFetch('/api/ai/predictions');
-  if(d) renderPredictions(d);
+  if(d && !d._error && Array.isArray(d)) renderPredictions(d);
+}
+async function fetchAnomalies(){
+  const d = await apiFetch('/api/ai/anomalies');
+  if(d && !d._error && Array.isArray(d)) renderBehavioralAnomalies(d);
 }
 async function fetchTrafficHistory(){
   const d = await apiFetch('/api/dashboard/traffic/history');
-  if(Array.isArray(d)){
+  if(Array.isArray(d) && !d._error){
     state.trafficHistory = d;
     initTrafficChart(d);
     if(d.length){
       addTrafficPoint(normalizeTraffic(d[d.length-1]));
-      return;
     }
   }
   const live = await apiFetch('/api/traffic/live');
-  if(live) addTrafficPoint(normalizeTraffic(live));
+  if(live && !live._error) addTrafficPoint(normalizeTraffic(live));
+  await fetchTrafficPackets();
 }
 async function fetchHoneypot(){
   const status = await apiFetch('/api/honeypot/status');
   const events = await apiFetch('/api/honeypot/events');
-  if(status) renderHoneypotStatus(status);
-  if(events) renderHoneypotEvents(events);
+  if(status && !status._error) renderHoneypotStatus(status);
+  if(events && !events._error && Array.isArray(events)) renderHoneypotEvents(events);
 }
 async function fetchMeshTopology(){
   const topo = await apiFetch('/api/mesh/topology');
   const critical = await apiFetch('/api/mesh/nodes/critical');
-  renderMeshTopology(normalizeMeshTopology(topo || {nodes:[], links:[]}));
-  renderCriticalNodes(Array.isArray(critical) ? critical : []);
+  if(topo && !topo._error) state.meshTopology = normalizeMeshTopology(topo || {nodes:[], links:[]});
+  if(state.meshTopology) renderMeshTopology(state.meshTopology);
+  if(critical && !critical._error && Array.isArray(critical) && critical.length){
+    renderCriticalNodes(critical);
+  } else if(state.meshTopology && state.meshTopology.nodes && state.meshTopology.nodes.length){
+    renderCriticalNodes(state.meshTopology.nodes);
+  }
 }
 
 // ══════════════════════════════════════════════
 // V-8 SCANNER
 // ══════════════════════════════════════════════
-state.vscan = { activeScanId: null, lastCompletedScanId: null };
+state.vscan = { activeScanId: null, lastCompletedScanId: null, pollTimer: null };
+
+function clearVScanPolling(){
+  if(state.vscan && state.vscan.pollTimer){
+    clearInterval(state.vscan.pollTimer);
+    state.vscan.pollTimer = null;
+  }
+}
+
+function startVScanPolling(scanId){
+  clearVScanPolling();
+  state.vscan.pollTimer = setInterval(async () => {
+    if(!state.vscan.activeScanId || state.vscan.activeScanId !== scanId){
+      clearVScanPolling();
+      return;
+    }
+    try {
+      const scan = await apiFetch(`/api/vscanner/scan/${scanId}/status`);
+      if(!scan || scan._error) return;
+      if(scan.progress !== undefined && scan.stage){
+        vscanOnProgress({stage: scan.stage, progress: scan.progress});
+      }
+      if(scan.status === 'completed'){
+        clearVScanPolling();
+        const details = await apiFetch(`/api/vscanner/scan/${scanId}`);
+        const findings = (details && details.findings) || [];
+        const summary = {
+          total_findings: findings.length,
+          duplicates_removed: 0,
+          average_confidence: findings.length ? (findings.reduce((a, b) => a + (b.confidence||1), 0) / findings.length) : 1.0,
+          by_severity: {
+            critical: findings.filter(f => f.severity === 'critical').length,
+            high: findings.filter(f => f.severity === 'high').length,
+            medium: findings.filter(f => f.severity === 'medium').length,
+            low: findings.filter(f => f.severity === 'low').length,
+            info: findings.filter(f => f.severity === 'info').length,
+          }
+        };
+        vscanOnComplete({scan_id: scanId, summary});
+      } else if(scan.status === 'failed'){
+        clearVScanPolling();
+        vscanOnFailed({scan_id: scanId, error: scan.error || 'Scan failed'});
+      } else if(scan.status === 'stopped'){
+        clearVScanPolling();
+        vscanOnStopped({scan_id: scanId});
+      }
+    } catch(e){
+      console.warn('VScan poll error:', e);
+    }
+  }, 1000);
+}
 
 async function fetchVScanHistory(){
   const d = await apiFetch('/api/vscanner/history');
@@ -1583,11 +1997,7 @@ async function checkVScanTools(){
   if(!res || !res.tools) return;
   const t = res.tools;
   const nmapLbl = document.getElementById('vs-tool-nmap-lbl');
-  const zapLbl = document.getElementById('vs-tool-zap-lbl');
-  const niktoLbl = document.getElementById('vs-tool-nikto-lbl');
   if(nmapLbl) nmapLbl.innerHTML = `Nmap ${t.nmap ? '🟢' : '<span style="color:var(--o);font-size:9px" title="Nmap not on PATH">(no path)</span>'}`;
-  if(zapLbl) zapLbl.innerHTML = `ZAP ${t.zap ? '🟢' : '<span style="color:var(--o);font-size:9px" title="ZAP daemon offline">(offline)</span>'}`;
-  if(niktoLbl) niktoLbl.innerHTML = `Nikto ${t.nikto ? '🟢' : '<span style="color:var(--o);font-size:9px" title="Nikto not on PATH">(no path)</span>'}`;
 }
 
 function renderVScanHistory(list){
@@ -1647,17 +2057,13 @@ async function startVScan(){
   if(!target){ alert('Enter a target URL first.'); return; }
   const tools = [];
   if(document.getElementById('vs-tool-nmap').checked) tools.push('nmap');
-  if(document.getElementById('vs-tool-zap').checked) tools.push('zap');
-  if(document.getElementById('vs-tool-nikto').checked) tools.push('nikto');
-  const activeScan = document.getElementById('vs-active-scan').checked;
-  if(activeScan && !confirm('Active Scan sends live test requests to this target via ZAP. Confirm you own it or are explicitly authorized to test it.')) return;
 
   document.getElementById('vs-log').innerHTML = '';
   document.getElementById('vs-findings').innerHTML = '<div class="loading-state"><div class="spinner"></div>Scanning...</div>';
   vscanAppendLog(`Starting scan of ${target}...`);
 
   const result = await apiPost('/api/vscanner/scan/start', {
-    target_url: target, tools, active_scan: activeScan, authorized_confirmation: activeScan
+    target_url: target, tools
   });
   if(!result || result.error){
     vscanAppendLog(`❌ ${result?.error || 'Failed to start scan'}`);
@@ -1665,14 +2071,17 @@ async function startVScan(){
   }
   state.vscan.activeScanId = result.scan_id;
   vscanSetRunning(true);
+  startVScanPolling(result.scan_id);
 }
 
 async function stopVScan(){
   if(!state.vscan.activeScanId) return;
+  clearVScanPolling();
   await apiPost(`/api/vscanner/scan/${state.vscan.activeScanId}/stop`, {});
 }
 
 function vscanOnComplete(d){
+  clearVScanPolling();
   vscanSetRunning(false);
   vscanAppendLog(`✅ Scan complete — ${d.summary.total_findings} findings (${d.summary.duplicates_removed} duplicates removed)`);
   document.getElementById('vs-crit').textContent = d.summary.by_severity.critical;
@@ -1685,6 +2094,7 @@ function vscanOnComplete(d){
 }
 
 function vscanOnFailed(d){
+  clearVScanPolling();
   vscanSetRunning(false);
   vscanAppendLog(`❌ Scan failed: ${d.error}`);
   state.vscan.activeScanId = null;
@@ -1692,6 +2102,7 @@ function vscanOnFailed(d){
 }
 
 function vscanOnStopped(d){
+  clearVScanPolling();
   vscanSetRunning(false);
   vscanAppendLog('⏹ Scan stopped.');
   state.vscan.activeScanId = null;
@@ -1788,11 +2199,16 @@ async function horusChat(){
   msgs.removeChild(typing);
   const bm = document.createElement('div'); bm.className='msg-bot';
 
-  const reply = (d && d.response) ? d.response : "I couldn't reach the backend.";
+  let reply = "I couldn't reach the backend.";
+  if (d) {
+    if (d.response) reply = d.response;
+    else if (d.error) reply = `[Error] ${d.error}`;
+  }
 
   const badge = document.getElementById('horus-ai-badge');
   if(badge && d && d.engine){
-    badge.textContent = d.engine === 'claude' ? '⚡ Claude' : '⚡ Local AI';
+    badge.textContent = d.engine === 'gemini' ? '⚡ Gemini 3.6' :
+      (d.engine === 'claude' ? '⚡ Claude' : '⚡ Horus AI');
     badge.style.display = '';
   } else if(badge){
     badge.style.display = 'none';
@@ -1808,7 +2224,7 @@ async function horusChat(){
 // ══════════════════════════════════════════════
 function renderDashboard(d){
   if(!d) return;
-  const score = d.security_score || 85;
+  const score = d.security_score ?? 0;
   state.lockdownActive = d.lockdown_active;
   if(d.score_components) state.scoreComponents = normalizeComponents(d.score_components) || state.scoreComponents;
   renderScore(score, state.scoreComponents);
@@ -1824,10 +2240,8 @@ function renderDashboard(d){
   setText('db-scr', score);
   // Fill risk breakdown in dashboard panel
   const dbRisk=document.getElementById('db-risk-breakdown');
-  if(dbRisk){
-    const comps={'Device Security':Math.round(score*0.9),'Network Health':Math.round(score*0.85),
-                 'Attack History':Math.round(score*0.95),'AI Confidence':Math.round(score*0.8)};
-    dbRisk.innerHTML=Object.entries(comps).map(([k,v])=>`
+  if(dbRisk && d.score_components){
+    dbRisk.innerHTML=Object.entries(normalizeComponents(d.score_components) || {}).map(([k,v])=>`
       <div class="bwrap">
         <div class="bhdr"><span>${k}</span><span style="color:var(--c)">${v}%</span></div>
         <div class="bbg"><div class="bfill" style="width:${v}%;background:${v>=80?'var(--g)':v>=60?'var(--y)':'var(--r)'}"></div></div>
@@ -1868,10 +2282,8 @@ function renderScore(score, components){
   // ── Always render scoreBreakdown ──
   const br=document.getElementById('scoreBreakdown');
   if(br){
-    const comps=(components&&Object.keys(components).length)
-      ? components
-      : {'Device Security':Math.round(sc*0.9),'Network Health':Math.round(sc*0.85),
-         'Attack History':Math.round(sc*0.95),'AI Confidence':Math.round(sc*0.8)};
+    const comps=(components&&Object.keys(components).length) ? components : {};
+    if(!Object.keys(comps).length){ br.innerHTML=emptyState('📊','No score breakdown available'); return; }
     br.innerHTML=Object.entries(comps).map(([k,v])=>`
       <div class="bwrap">
         <div class="bhdr"><span>${String(k).replace(/_/g,' ')}</span>
@@ -1886,26 +2298,76 @@ function renderDevices(devices){
   if(!devices) return;
   const list = document.getElementById('dev-list');
   if(!list) return;
-  if(!devices.length){ list.innerHTML=emptyState('💻','No devices discovered yet. Make sure Demo Mode is active.'); return; }
-  const icons = {router:'🔀',pc:'💻',phone:'📱',server:'🗄️',printer:'🖨️',iot:'📷',camera:'📷',unknown:'❓'};
-  list.innerHTML = devices.map(d => `
-    <div class="dev-row ${d.status==='unknown'||d.status==='suspicious'?'unknown':''}">
-      <div class="dev-icon ${d.status==='unknown'?'unknown':''}">${icons[d.device_type]||'💻'}</div>
-      <div style="flex:1">
-        <div style="font-size:11px;font-weight:600;color:${d.status==='unknown'?'var(--r)':'var(--text)'}">${d.hostname||'Unknown'} ${d.status==='unknown'?'⚠️':''}</div>
-        <div style="font-size:9px;color:var(--dim);font-family:'JetBrains Mono',monospace">${d.ip_address||'--'} — ${d.mac_address||'--'}</div>
-        <div style="font-size:9px;color:var(--dim)">${d.vendor||'Unknown Vendor'} · ${d.device_type||'unknown'}</div>
+  if(!devices.length){ list.innerHTML=emptyState('💻','No devices discovered by the backend yet.'); return; }
+
+  list.innerHTML = devices.map(d => {
+    const icon = d.icon || devIcon(d.device_type);
+    const dType = d.device_type || 'Unknown Device';
+    const isUnkType = dType === 'Unknown Device' || dType === 'unknown';
+    const isUnkStatus = d.status === 'unknown' || d.status === 'suspicious';
+    const conf = typeof d.confidence === 'number' ? d.confidence : (parseInt(d.confidence) || 0);
+
+    let confBadge = '';
+    if(conf >= 80){
+      confBadge = `<span style="font-size:8px;padding:1px 6px;border-radius:6px;background:rgba(0,255,136,.12);color:var(--g);border:1px solid rgba(0,255,136,.3)">${conf}% Conf</span>`;
+    } else if(conf >= 50){
+      confBadge = `<span style="font-size:8px;padding:1px 6px;border-radius:6px;background:rgba(255,204,0,.12);color:var(--y);border:1px solid rgba(255,204,0,.3)">${conf}% Conf</span>`;
+    } else if(conf > 0){
+      confBadge = `<span style="font-size:8px;padding:1px 6px;border-radius:6px;background:rgba(255,51,102,.1);color:var(--r);border:1px solid rgba(255,51,102,.25)">${conf}% Conf</span>`;
+    } else {
+      confBadge = `<span style="font-size:8px;padding:1px 6px;border-radius:6px;background:rgba(255,255,255,.05);color:var(--dim);border:1px solid var(--border)">-- Conf</span>`;
+    }
+
+    let evidenceList = [];
+    if(Array.isArray(d.evidence)) {
+      evidenceList = d.evidence;
+    } else if(typeof d.evidence === 'string' && d.evidence.trim().startsWith('[')) {
+      try { evidenceList = JSON.parse(d.evidence); } catch(e) { evidenceList = []; }
+    }
+
+    const mfgModel = [d.manufacturer || d.vendor, d.model].filter(Boolean).join(' · ');
+    const osPart = d.os && d.os !== 'Unknown' ? ` · ${d.os}` : '';
+
+    return `
+    <div class="dev-row ${isUnkStatus ? 'unknown' : ''}" style="align-items:flex-start;padding:10px 12px">
+      <div class="dev-icon ${isUnkStatus ? 'unknown' : ''}" style="width:36px;height:36px;font-size:18px;margin-top:2px">${icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-size:12px;font-weight:700;color:${isUnkType ? 'var(--r)' : 'var(--c)'}">${dType}</span>
+          ${d.is_gateway ? '<span style="font-size:8px;padding:1px 5px;border-radius:4px;background:rgba(0,245,255,.12);color:var(--c);border:1px solid rgba(0,245,255,.3)">🌐 Gateway</span>' : ''}
+          ${confBadge}
+        </div>
+        <div style="font-size:10px;font-weight:600;color:var(--text);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+          ${d.hostname && d.hostname !== 'Unknown' ? d.hostname : (d.ip_address || 'Unknown Host')}
+        </div>
+        <div style="font-size:9px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:2px">
+          ${d.ip_address || '--'} — ${d.mac_address || '--'}
+        </div>
+        <div style="font-size:9px;color:var(--dim);margin-top:2px">
+          ${mfgModel || 'Unknown Vendor'}${osPart}
+        </div>
+        ${evidenceList.length ? `
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
+            ${evidenceList.slice(0, 3).map(ev => `<span style="font-size:8px;padding:1px 5px;border-radius:4px;background:rgba(0,245,255,.05);color:var(--dim);border:1px solid rgba(0,245,255,.12)">🔍 ${ev}</span>`).join('')}
+            ${evidenceList.length > 3 ? `<span style="font-size:8px;color:var(--dim);align-self:center">+${evidenceList.length - 3} more</span>` : ''}
+          </div>` : ''}
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
-        <span style="font-size:9px;padding:2px 8px;border-radius:10px;background:${d.status==='trusted'?'rgba(0,255,136,.08)':d.status==='blocked'?'rgba(100,100,100,.1)':'rgba(255,51,102,.08)'};color:${d.status==='trusted'?'var(--g)':d.status==='blocked'?'var(--dim)':'var(--r)'};border:1px solid ${d.status==='trusted'?'rgba(0,255,136,.2)':d.status==='blocked'?'rgba(100,100,100,.2)':'rgba(255,51,102,.2)'}">${d.status||'unknown'}</span>
-        ${d.status==='unknown'||d.status==='suspicious'?`
-          <div style="display:flex;gap:4px">
+      <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">
+        <span style="font-size:9px;padding:2px 8px;border-radius:10px;background:${d.status==='trusted'?'rgba(0,255,136,.08)':d.status==='blocked'?'rgba(100,100,100,.1)':'rgba(255,51,102,.08)'};color:${d.status==='trusted'?'var(--g)':d.status==='blocked'?'var(--dim)':'var(--r)'};border:1px solid ${d.status==='trusted'?'rgba(0,255,136,.2)':d.status==='blocked'?'rgba(100,100,100,.2)':'rgba(255,51,102,.2)'}">
+          ${d.status || 'unknown'}
+        </span>
+        ${isUnkStatus ? `
+          <div style="display:flex;gap:4px;margin-top:2px">
             <button class="btn btn-r" style="font-size:8px;padding:2px 7px" onclick="blockDevice(${d.id}).then(()=>fetchDevices())" data-ar="حظر">Block</button>
             <button class="btn btn-g" style="font-size:8px;padding:2px 7px" onclick="trustDevice(${d.id}).then(()=>fetchDevices())" data-ar="وثق">Trust</button>
-          </div>`:''}</div>
-    </div>`).join('');
+          </div>` : ''}
+        <button class="btn" style="font-size:8px;padding:2px 6px;background:transparent;border:1px solid var(--border);color:var(--dim)" onclick="apiFetch('/api/devices/' + d.id + '/fingerprint?refresh=1').then(()=>fetchDevices())" title="Re-scan and fingerpint this device">↻ Rescan</button>
+      </div>
+    </div>`;
+  }).join('');
   updateNetMap(devices);
 }
+
 
 function addDevice(d){
   state.devices.unshift(d);
@@ -1916,6 +2378,7 @@ function addDevice(d){
 function renderAttacks(attacks){
   if(!attacks) return;
   const list = document.getElementById('threat-list');
+  renderAttackSources(attacks);
   if(!list) return;
   if(!attacks.length){ list.innerHTML=emptyState('🛡️','No active threats. Network is secure.'); return; }
   const sevColor = {critical:'var(--r)',high:'var(--o)',medium:'var(--y)',low:'var(--g)'};
@@ -1923,15 +2386,83 @@ function renderAttacks(attacks){
   list.innerHTML = attacks.slice(0,10).map(a => `
     <div class="threat-row ${sevClass[a.severity]||'threat-medium'}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-        <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:${sevColor[a.severity]||'var(--y)'}">${attackIcon(a.attack_type)} ${a.attack_type?.toUpperCase()}</div>
+        <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:${sevColor[a.severity]||'var(--y)'}">${attackIcon(a.attack_type)} ${(a.attack_type||'ATTACK').toUpperCase()}</div>
         <div style="display:flex;gap:6px">
           <span style="font-size:8px;color:var(--dim);font-family:'JetBrains Mono',monospace">${fmtTime(a.created_at)}</span>
           <span style="font-size:8px;padding:1px 7px;border-radius:10px;background:${a.status==='active'?'rgba(255,51,102,.15)':'rgba(0,255,136,.1)'};color:${a.status==='active'?'var(--r)':'var(--g)'}">${a.status||'active'}</span>
         </div>
       </div>
-      <div style="font-size:10px;color:var(--dim)">Source: ${a.source_ip||'Unknown'} | Confidence: ${a.confidence?Math.round(a.confidence*100)+'%':'--'} | ${a.severity?.toUpperCase()}</div>
+      <div style="font-size:10px;color:var(--dim)">Source: ${a.source_ip||'Unknown'}${a.geo_country ? ' (' + a.geo_country + (a.geo_city ? ', ' + a.geo_city : '') + ')' : ''} | Confidence: ${a.confidence?Math.round(a.confidence*100)+'%':'--'} | ${(a.severity||'MEDIUM').toUpperCase()}</div>
       ${a.status==='active'?`<button class="btn btn-g" style="font-size:9px;padding:2px 8px;margin-top:6px" onclick="apiPost('/api/attacks/${a.id}/mitigate',{mitigation:'Manual'}).then(()=>fetchAttacks())">Mitigate</button>`:''}
     </div>`).join('');
+}
+
+function renderAttackSources(attacks){
+  const threatSrcEl = document.getElementById('atksrc');
+  const globeSrcEl = document.getElementById('atksrc2');
+  const raw = Array.isArray(attacks) ? attacks : [];
+  
+  const extAttacks = raw.filter(a => {
+    const ip = a.source_ip || a.ip;
+    return ip && !ip.startsWith('192.168.') && !ip.startsWith('10.') && !ip.startsWith('127.');
+  });
+
+  if(threatSrcEl){
+    if(!extAttacks.length){
+      threatSrcEl.innerHTML = '<div style="color:var(--dim);padding:4px 0;font-size:9px">🛡️ No external threat sources active</div>';
+    } else {
+      threatSrcEl.innerHTML = extAttacks.slice(0, 5).map(a => {
+        const ip = a.source_ip || 'Unknown';
+        const geo = a.geo_country ? `${a.geo_country}${a.geo_city ? ', ' + a.geo_city : ''}` : 'External';
+        const type = (a.attack_type || a.type || 'Attack').toUpperCase();
+        return `<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+          <span style="color:var(--r)">🔴 ${ip} (${geo})</span>
+          <span style="color:var(--dim)">${type}</span>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  if(globeSrcEl){
+    if(!extAttacks.length){
+      globeSrcEl.innerHTML = '<div class="empty-state"><div class="es-icon">🌐</div><div class="es-text">No external attacks detected</div></div>';
+    } else {
+      const map = new Map();
+      extAttacks.forEach(a => {
+        const ip = a.source_ip || a.ip;
+        if(!map.has(ip)){
+          map.set(ip, {
+            ip,
+            country: a.geo_country || 'External Origin',
+            city: a.geo_city || '',
+            type: a.attack_type || a.type || 'Threat',
+            severity: a.severity || 'high',
+            count: 0,
+            last_seen: a.created_at || new Date().toISOString()
+          });
+        }
+        map.get(ip).count++;
+      });
+      const rows = Array.from(map.values());
+      globeSrcEl.innerHTML = rows.map(r => {
+        const sevCol = r.severity === 'critical' ? 'var(--r)' : r.severity === 'high' ? 'var(--o)' : 'var(--y)';
+        return `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="color:var(--r)">🔴</span>
+              <div>
+                <div style="font-weight:600;color:var(--text)">${r.ip}</div>
+                <div style="color:var(--dim);font-size:8px">${r.country}${r.city ? ' · ' + r.city : ''}</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <span style="font-size:8px;padding:1px 6px;border-radius:4px;background:rgba(255,51,102,0.12);color:${sevCol};border:1px solid rgba(255,51,102,0.25)">${r.type.toUpperCase()}</span>
+              <div style="color:var(--dim);font-size:8px;margin-top:2px">${r.count} attack${r.count > 1 ? 's' : ''}</div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+  }
 }
 
 function renderAttackStats(stats){
@@ -1980,61 +2511,8 @@ function addAlertRow(a){
   if(list.children.length>6) list.removeChild(list.lastChild);
 }
 
-const DEMO_TOPOLOGY_DEVICES = [
-  { id:1, hostname:'Core-Gateway-R1', ip_address:'192.168.1.1', mac_address:'00:1A:2B:3C:4D:5E', vendor:'Cisco Systems', device_type:'gateway', status:'trusted', is_gateway:true },
-  { id:2, hostname:'Horus-Cortex-AI', ip_address:'192.168.1.10', mac_address:'00:15:5D:8A:2B:11', vendor:'NullByte Linux', device_type:'server', status:'trusted' },
-  { id:3, hostname:'SecOps-Workstation-01', ip_address:'192.168.1.45', mac_address:'3C:D9:2B:14:8E:90', vendor:'Dell Enterprise', device_type:'pc', status:'trusted' },
-  { id:4, hostname:'Admin-MacBook-Pro', ip_address:'192.168.1.72', mac_address:'F0:18:98:33:41:2C', vendor:'Apple Inc.', device_type:'pc', status:'trusted' },
-  { id:5, hostname:'Honeypot-Decoy-Trap', ip_address:'192.168.1.55', mac_address:'52:54:00:12:34:56', vendor:'QEMU Virtual', device_type:'server', status:'trusted' },
-  { id:6, hostname:'IoT-Surveillance-Cam-4K', ip_address:'192.168.1.115', mac_address:'B8:27:EB:77:88:99', vendor:'Raspberry Pi', device_type:'iot', status:'trusted' },
-  { id:7, hostname:'Sec-Analyst-Phone', ip_address:'192.168.1.140', mac_address:'AC:C1:EE:55:66:77', vendor:'Samsung Galaxy', device_type:'phone', status:'trusted' },
-  { id:8, hostname:'UNKNOWN-ROGUE-HOST', ip_address:'192.168.1.199', mac_address:'00:0C:29:AA:BB:CC', vendor:'VMware Inc.', device_type:'unknown', status:'unknown' },
-];
-
-const DEMO_PREDICTIONS = [
-  { predicted_attack: 'DDoS SYN-Flood Surge', time_horizon: 12, probability: 0.94, severity: 'critical' },
-  { predicted_attack: 'Credential Spraying (SSH/SMB)', time_horizon: 18, probability: 0.87, severity: 'high' },
-  { predicted_attack: 'Port Sweep & Service Enum', time_horizon: 27, probability: 0.79, severity: 'medium' }
-];
-
-const DEMO_HONEYPOT_EVENTS = [
-  { created_at: new Date(Date.now() - 35000).toISOString(), honeypot_type: 'ssh', source_ip: '185.220.101.5', action: 'Brute-Force Auth [TRAPPED]', username: 'root', password: 'admin123' },
-  { created_at: new Date(Date.now() - 110000).toISOString(), honeypot_type: 'http', source_ip: '45.154.255.88', action: 'Web Vulnerability Scan /wp-login.php [BLOCKED]', username: 'admin', password: 'password' },
-  { created_at: new Date(Date.now() - 240000).toISOString(), honeypot_type: 'telnet', source_ip: '194.26.29.112', action: 'Mirai Signature Scan Port 2323 [ISOLATED]', username: 'support', password: 'support' },
-  { created_at: new Date(Date.now() - 480000).toISOString(), honeypot_type: 'smb', source_ip: '103.152.220.14', action: 'EternalBlue MS17-010 Probe [FINGERPRINTED]', username: 'guest', password: '' },
-  { created_at: new Date(Date.now() - 720000).toISOString(), honeypot_type: 'ftp', source_ip: '91.240.118.234', action: 'Anonymous Traversal Probe Port 2121 [LOGGED]', username: 'anonymous', password: 'user@' }
-];
-
-const DEMO_BEHAVIORAL_LOGS = [
-  { time: '12s ago', title: 'Port 445 SMB anomaly burst', score: '0.94', sev: 'critical', desc: 'Outbound connection rate +410% above baseline.' },
-  { time: '45s ago', title: 'DNS Tunneling Signature', score: '0.88', sev: 'high', desc: 'High-entropy TXT records detected on port 53.' },
-  { time: '2m ago',  title: 'Outbound C2 Beaconing', score: '0.82', sev: 'high', desc: 'Periodic heartbeat matched untrusted ASN 24940.' },
-  { time: '5m ago',  title: 'Rapid ARP Broadcast Flood', score: '0.76', sev: 'medium', desc: 'Broadcast frequency deviation of +340%.' },
-  { time: '9m ago',  title: 'Off-Hours Decoy Probe', score: '0.71', sev: 'medium', desc: 'Multiple credential attempts on local SSH trap.' }
-];
-
-const DEMO_MESH_TOPOLOGY = {
-  nodes: [
-    { id: 'node-gw',  ip: '192.168.1.1',   label: 'Gateway Shield', type: 'gateway', status: 'active', centrality: 0.95 },
-    { id: 'node-ai',  ip: '192.168.1.10',  label: 'AI Cortex Engine', type: 'cortex', status: 'active', centrality: 0.88 },
-    { id: 'node-ids', ip: '192.168.1.80',  label: 'IDS/IPS Sentinel', type: 'ids', status: 'active', centrality: 0.82 },
-    { id: 'node-hp',  ip: '192.168.1.55',  label: 'Honeypot Decoy', type: 'honeypot', status: 'active', centrality: 0.74 },
-    { id: 'node-r1',  ip: '192.168.1.102', label: 'Mesh Relay Alpha', type: 'relay', status: 'active', centrality: 0.65 },
-    { id: 'node-ep',  ip: '192.168.1.145', label: 'Endpoint Guard', type: 'endpoint', status: 'active', centrality: 0.58 }
-  ],
-  links: [
-    { source: 'node-gw', target: 'node-ai' },
-    { source: 'node-gw', target: 'node-ids' },
-    { source: 'node-ai', target: 'node-hp' },
-    { source: 'node-ids', target: 'node-r1' },
-    { source: 'node-r1', target: 'node-ep' },
-    { source: 'node-ai', target: 'node-ep' },
-    { source: 'node-gw', target: 'node-hp' }
-  ]
-};
-
 function renderPredictions(preds){
-  const data = (preds && preds.length) ? preds : DEMO_PREDICTIONS;
+  const data = Array.isArray(preds) ? preds : [];
   state.predictions = data;
   const list = document.getElementById('pred-list');
   if(list){
@@ -2048,37 +2526,37 @@ function renderPredictions(preds){
       </div>`).join('');
   }
   const confEl = document.getElementById('pred-confidence');
-  if(confEl) confEl.textContent = 'Confidence: 98.4% (Ensemble Cortex)';
-  renderBehavioralAnomalies();
+  if(confEl) confEl.textContent = data.length ? 'Live predictions from Horus AI' : 'No live predictions available';
 }
 
-function renderBehavioralAnomalies(){
+function renderBehavioralAnomalies(anomalies=[]){
   const log = document.getElementById('behav-log');
   if(!log) return;
-  const sevCol = { critical: 'var(--r)', high: 'var(--o)', medium: 'var(--y)' };
-  log.innerHTML = DEMO_BEHAVIORAL_LOGS.map(b => `
+  const sevCol = { critical: 'var(--r)', high: 'var(--o)', medium: 'var(--y)', low: 'var(--g)' };
+  if(!anomalies.length){ log.innerHTML = emptyState('🧠','No behavioral anomalies recorded'); return; }
+  log.innerHTML = anomalies.map(b => `
     <div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
-      <div style="width:7px;height:7px;border-radius:50%;background:${sevCol[b.sev]||'var(--y)'};margin-top:4px;flex-shrink:0;box-shadow:0 0 6px ${sevCol[b.sev]||'var(--y)'}"></div>
+      <div style="width:7px;height:7px;border-radius:50%;background:${sevCol[b.severity]||'var(--y)'};margin-top:4px;flex-shrink:0;box-shadow:0 0 6px ${sevCol[b.severity]||'var(--y)'}"></div>
       <div style="flex:1;min-width:0">
         <div style="display:flex;justify-content:space-between;gap:6px">
           <span style="font-weight:600;color:var(--text)">${b.title}</span>
-          <span style="color:${sevCol[b.sev]||'var(--y)'};font-size:8px">${b.score} AI score</span>
+          <span style="color:${sevCol[b.severity]||'var(--y)'};font-size:8px">${b.confidence != null ? Math.round(b.confidence*100)+'%' : '--'} confidence</span>
         </div>
-        <div style="color:var(--dim);font-size:8px;margin-top:2px">${b.desc}</div>
+        <div style="color:var(--dim);font-size:8px;margin-top:2px">${b.details || b.description || b.message || 'Anomaly detected by backend'}</div>
       </div>
-      <span style="color:var(--dim);font-size:8px;flex-shrink:0">${b.time}</span>
+      <span style="color:var(--dim);font-size:8px;flex-shrink:0">${fmtTime(b.created_at)}</span>
     </div>
   `).join('');
 }
 
 function renderHoneypotStatus(s){
-  setText('hp-status', (s && s.active !== false) ? 'ACTIVE' : 'ACTIVE');
-  setText('hp-events', s?.statistics?.total_events || 18);
-  setText('hp-attackers', s?.statistics?.unique_attackers || 5);
+  setText('hp-status', s && s.active ? 'ACTIVE' : 'INACTIVE');
+  setText('hp-events', s?.statistics?.total_events ?? 0);
+  setText('hp-attackers', s?.statistics?.unique_attackers ?? 0);
 }
 
 function renderHoneypotEvents(events){
-  const data = (events && events.length) ? events : DEMO_HONEYPOT_EVENTS;
+  const data = Array.isArray(events) ? events : [];
   state.honeypotEvents = data.slice();
   const list = document.getElementById('hp-list');
   if(!list) return;
@@ -2089,7 +2567,6 @@ function renderHoneypotEvents(events){
       <div>🍯 <b style="color:var(--c)">${e.honeypot_type?.toUpperCase()}</b> trap — <span style="color:var(--text)">${e.source_ip}</span> — <span style="color:var(--o)">${e.action}</span></div>
       ${e.username?`<div style="font-size:9px;color:var(--dim);font-family:'JetBrains Mono',monospace">Captured: <b>${e.username}</b> / <b>${e.password||'--'}</b></div>`:''}</div>
     </div>`).join('');
-  renderHoneypotStatus();
 }
 
 function addHoneypotEvent(e){
@@ -2099,48 +2576,67 @@ function addHoneypotEvent(e){
 
 function renderMeshTopology(topo){
   const normalized = normalizeMeshTopology(topo);
-  const data = (normalized.nodes && normalized.nodes.length >= 2) ? normalized : DEMO_MESH_TOPOLOGY;
-  setText('mesh-nodes', data.nodes.filter(n=>n.status==='active').length);
+  const data = normalized;
+  state.meshTopology = data;
+  const activeCount = data.nodes.filter(n=>n.status==='active').length || data.nodes.length;
+  setText('mesh-nodes', activeCount);
   const c = document.getElementById('mesh-canvas');
   if(c){
     c.width = c.parentElement.offsetWidth || 500;
     drawMesh(c, data);
   }
-  renderCriticalNodes(data.nodes.filter(n => n.centrality >= 0.75));
+  const topNodes = data.nodes.slice().sort((a,b) => (b.centrality||0) - (a.centrality||0));
+  renderCriticalNodes(topNodes.slice(0, 3));
 }
 
 let meshPulseT = 0;
 function drawMesh(c, topo){
   const ctx = c.getContext('2d'), W = c.width, H = 300, CX = W/2, CY = H/2;
   ctx.clearRect(0, 0, W, H);
-  const data = (topo && topo.nodes && topo.nodes.length) ? topo : DEMO_MESH_TOPOLOGY;
-  const nodes = data.nodes, links = data.links;
+  const data = topo && topo.nodes && topo.nodes.length ? topo : (state.meshTopology && state.meshTopology.nodes && state.meshTopology.nodes.length ? state.meshTopology : {nodes:[], links:[]});
+  let nodes = data.nodes, links = data.links || data.edges || [];
+  
+  if(!nodes.length){
+    // Render high-tech searching radar animation while topology syncs
+    ctx.font = '11px JetBrains Mono';
+    ctx.fillStyle = 'rgba(0, 245, 255, 0.7)';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚡ SYNCHRONIZING ACTIVE MESH TOPOLOGY...', CX, CY);
+    ctx.beginPath();
+    ctx.arc(CX, CY, 35 + Math.sin(meshPulseT * 0.05) * 8, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0, 245, 255, 0.3)';
+    ctx.stroke();
+    return;
+  }
+
   const pos = {};
   nodes.forEach((n, i) => {
     const key = n.id || n.node_id;
-    const a = (i / nodes.length) * Math.PI * 2 + (meshPulseT * 0.002);
-    pos[key] = { x: CX + Math.cos(a) * (W > 450 ? 140 : 100), y: CY + Math.sin(a) * 95 };
+    const a = (i / nodes.length) * Math.PI * 2 + (meshPulseT * 0.003);
+    const radiusX = (W > 500 ? 160 : 110);
+    const radiusY = 95;
+    pos[key] = { x: CX + Math.cos(a) * radiusX, y: CY + Math.sin(a) * radiusY };
   });
 
   // Draw connecting links
-  links.forEach(l => {
+  links.forEach((l, lIdx) => {
     const a = pos[l.source], b = pos[l.target];
     if(!a || !b) return;
     ctx.beginPath();
     ctx.moveTo(a.x, a.y);
     ctx.lineTo(b.x, b.y);
-    ctx.strokeStyle = 'rgba(0,245,255,0.25)';
-    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = 'rgba(0, 245, 255, 0.28)';
+    ctx.lineWidth = 1.4;
     ctx.stroke();
 
     // Traveling packet pulse
-    const prog = (meshPulseT * 0.02 + (links.indexOf(l) * 0.3)) % 1;
+    const prog = (meshPulseT * 0.02 + (lIdx * 0.25)) % 1;
     const px = a.x + (b.x - a.x) * prog, py = a.y + (b.y - a.y) * prog;
     ctx.beginPath();
-    ctx.arc(px, py, 2.5, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0,255,136,0.9)';
-    ctx.shadowColor = 'rgba(0,255,136,0.8)';
-    ctx.shadowBlur = 6;
+    ctx.arc(px, py, 2.8, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 255, 136, 0.95)';
+    ctx.shadowColor = 'rgba(0, 255, 136, 0.9)';
+    ctx.shadowBlur = 8;
     ctx.fill();
     ctx.shadowBlur = 0;
   });
@@ -2150,37 +2646,67 @@ function drawMesh(c, topo){
     const key = n.id || n.node_id;
     const p = pos[key];
     if(!p) return;
+    const isGw = n.type === 'gateway' || n.role === 'gateway' || n.type === 'router';
+    const isCortex = n.type === 'cortex';
+    const nodeCol = isGw ? 'rgba(0, 245, 255, 0.9)' : isCortex ? 'rgba(168, 85, 247, 0.9)' : 'rgba(0, 255, 136, 0.9)';
+
+    // Outer glow halo
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 9, 0, Math.PI * 2);
-    ctx.fillStyle = n.type === 'gateway' ? 'rgba(0,245,255,0.8)' : n.type === 'cortex' ? 'rgba(168,85,247,0.8)' : 'rgba(0,255,136,0.8)';
-    ctx.shadowColor = ctx.fillStyle;
-    ctx.shadowBlur = 8;
+    ctx.arc(p.x, p.y, isGw ? 13 : 10, 0, Math.PI * 2);
+    ctx.fillStyle = nodeCol;
+    ctx.shadowColor = nodeCol;
+    ctx.shadowBlur = 10;
     ctx.fill();
     ctx.shadowBlur = 0;
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
+    // Inner core
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+
+    // Label
     ctx.font = '9px JetBrains Mono, Cairo';
-    ctx.fillStyle = 'rgba(200,232,240,0.85)';
+    ctx.fillStyle = 'rgba(200, 232, 240, 0.9)';
     ctx.textAlign = 'center';
-    ctx.fillText(n.label || n.ip || key, p.x, p.y + 22);
+    const displayLabel = (isGw ? '⚡ GW ' : '') + (n.label || n.ip || n.ip_address || key);
+    ctx.fillText(displayLabel, p.x, p.y + 22);
   });
 }
 
 function renderCriticalNodes(nodes){
   const el = document.getElementById('critical-nodes');
   if(!el) return;
-  const list = (nodes && nodes.length) ? nodes : [
-    { ip_address: '192.168.1.1 (Gateway Shield)', centrality: 0.95 },
-    { ip_address: '192.168.1.10 (AI Cortex Inspector)', centrality: 0.88 }
-  ];
+  const list = Array.isArray(nodes) && nodes.length ? nodes : (state.meshTopology?.nodes || []);
   setText('mesh-critical', list.length);
-  el.innerHTML = list.map(n => `
-    <div style="font-size:10px;padding:6px 0;border-bottom:1px solid var(--border);color:var(--o);font-family:'JetBrains Mono',monospace">
-      🛡️ <b>${n.ip_address || n.node_id}</b> — Centrality: <b>${(n.centrality || 0.85).toFixed(2)}</b>
-    </div>`).join('');
+  if(!list.length){
+    el.innerHTML = '<div style="font-size:10px;color:var(--dim);padding:8px;font-family:\'JetBrains Mono\',monospace">Scanning mesh nodes...</div>';
+    return;
+  }
+  el.innerHTML = list.slice(0, 5).map(n => {
+    const cent = Number(n.centrality || (n.role === 'gateway' || n.type === 'gateway' ? 0.95 : 0.80));
+    const ip = n.ip_address || n.ip || n.node_id || 'Node';
+    const role = (n.role || n.type || 'node').toUpperCase();
+    const isGw = role.includes('GATEWAY') || role.includes('ROUTER');
+    const badgeCol = isGw ? 'var(--c)' : 'var(--o)';
+    return `
+      <div style="padding:7px 0;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+          <span style="color:var(--text);font-size:10px;font-weight:600">🛡️ ${ip}</span>
+          <span style="font-size:8px;padding:2px 6px;border-radius:4px;background:rgba(0,245,255,0.08);color:${badgeCol};border:1px solid rgba(0,245,255,0.2)">${role}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;background:rgba(255,255,255,0.06);height:4px;border-radius:2px;overflow:hidden">
+            <div style="width:${Math.round(cent * 100)}%;background:${isGw?'var(--c)':'var(--o)'};height:100%;border-radius:2px"></div>
+          </div>
+          <span style="font-size:9px;color:var(--dim)">${(cent).toFixed(2)}</span>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function addSandboxLog(a){
@@ -2189,7 +2715,7 @@ function addSandboxLog(a){
   if(log.querySelector('.empty-state')) log.innerHTML='';
   const d=document.createElement('div'); d.className='logitem';
   d.style.color = a.severity==='critical'?'var(--r)':a.severity==='high'?'var(--o)':'var(--y)';
-  d.textContent = `[${new Date().toTimeString().slice(0,8)}] ⚡ ${a.type||'ATTACK'} from ${a.source_ip||'demo'}`;
+  d.textContent = `[${new Date().toTimeString().slice(0,8)}] ⚡ ${a.type||'ATTACK'} from ${a.source_ip||'Unknown Source'}`;
   log.insertBefore(d, log.firstChild);
   if(log.children.length > 20) log.removeChild(log.lastChild);
 }
@@ -2200,7 +2726,7 @@ function addSandboxLog(a){
 let topoAnimTimer = 0;
 let topoRAF = null;
 function startTopoMap(devices){
-  const devs = (devices && devices.length >= 2) ? devices : DEMO_TOPOLOGY_DEVICES;
+  const devs = Array.isArray(devices) ? devices : [];
   if(topoRAF) cancelAnimationFrame(topoRAF);
   function anim(){
     ['topo-canvas', 'netmap-canvas'].forEach(id => {
@@ -2213,7 +2739,7 @@ function startTopoMap(devices){
     const mc = document.getElementById('mesh-canvas');
     if(mc && mc.offsetParent !== null){
       mc.width = mc.parentElement?.offsetWidth || 500;
-      drawMesh(mc, DEMO_MESH_TOPOLOGY);
+      drawMesh(mc, state.meshTopology || {nodes:[], links:[]});
     }
     topoAnimTimer++;
     meshPulseT++;
@@ -2225,10 +2751,17 @@ function startTopoMap(devices){
 function drawNetTopology(c, devices){
   const ctx = c.getContext('2d'), W = c.width, H = parseInt(c.getAttribute('height')) || 300, CX = W/2, CY = H/2;
   ctx.clearRect(0, 0, W, H);
-  const devs = (devices && devices.length) ? devices : DEMO_TOPOLOGY_DEVICES;
+  const devs = Array.isArray(devices) ? devices : [];
   const gw = devs.find(d => d.is_gateway || d.device_type === 'gateway') || devs[0];
   const others = devs.filter(d => d !== gw);
 
+  if(!devs.length){
+    ctx.font = '10px JetBrains Mono';
+    ctx.fillStyle = 'rgba(200,232,240,0.6)';
+    ctx.textAlign = 'center';
+    ctx.fillText('No network devices discovered', CX, CY);
+    return;
+  }
   const gwPos = { x: CX, y: H * 0.28 };
   const positions = [gwPos];
 
@@ -2275,7 +2808,7 @@ function drawNetTopology(c, devices){
   ctx.fillText('🔀', gwPos.x, gwPos.y);
   ctx.font = '10px JetBrains Mono';
   ctx.fillStyle = 'rgba(0,245,255,0.9)';
-  ctx.fillText(gw.hostname || 'Gateway (192.168.1.1)', gwPos.x, gwPos.y - 30);
+  ctx.fillText(gw.hostname || (gw.ip_address ? `Gateway (${gw.ip_address})` : (gw.ip ? `Gateway (${gw.ip})` : 'Gateway')), gwPos.x, gwPos.y - 30);
 
   // Draw other devices
   positions.slice(1).forEach(({ x, y, dev }) => {
@@ -2312,104 +2845,705 @@ function startNetMap(devices){
 function updateNetMap(devices){
   startTopoMap(devices);
 }
+let trafficChartData = [];
+let trafficRAF = null;
+function initTrafficChart(history){
+  trafficChartData = (Array.isArray(history) ? history : []).map(normalizeTraffic).filter(Boolean).slice(-120);
+  drawTrafficChart();
+}
+
+function addTrafficPoint(point){
+  const normalized = normalizeTraffic(point);
+  if(!normalized) return;
+  trafficChartData = [...trafficChartData, normalized].slice(-120);
+  state.traffic = normalized;
+  setText('bwDown', `${Number(normalized.download_mbps || 0).toFixed(2)} Mbps`);
+  setText('bwUp', `${Number(normalized.upload_mbps || 0).toFixed(2)} Mbps`);
+  setText('bwTotal', `${Number(normalized.bandwidth_mbps || 0).toFixed(2)} Mbps`);
+  setText('pps', Math.round(normalized.packets_per_sec || 0));
+  setText('bwPackets', Math.round(normalized.packets_per_sec || 0));
+  setText('connCount', normalized.active_connections !== undefined ? normalized.active_connections : '--');
+  
+  const proto = document.getElementById('proto-split');
+  if(proto){
+    const total = (normalized.tcp_count || 0) + (normalized.udp_count || 0) + (normalized.icmp_count || 0) + (normalized.other_count || 0);
+    const colors = { tcp: 'var(--c)', udp: 'var(--y)', icmp: 'var(--r)', other: 'var(--dim)' };
+    proto.innerHTML = total ? ['tcp','udp','icmp','other'].map(name => {
+      const value = normalized[`${name}_count`] || 0;
+      const pct = Math.round(value / Math.max(total, 1) * 100);
+      const col = colors[name] || 'var(--c)';
+      return `
+        <div style="margin-bottom:6px;font-family:'JetBrains Mono',monospace;font-size:9px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+            <span style="color:var(--text)">${name.toUpperCase()}</span>
+            <span style="color:${col};font-weight:600">${value} (${pct}%)</span>
+          </div>
+          <div style="background:rgba(255,255,255,0.06);height:4px;border-radius:2px;overflow:hidden">
+            <div style="width:${pct}%;background:${col};height:100%;border-radius:2px"></div>
+          </div>
+        </div>`;
+    }).join('') : emptyState('📡','No protocol data recorded');
+  }
+  drawTrafficChart();
+}
+
+function renderPacketLog(packets){
+  const el = document.getElementById('pkt-log');
+  if(!el) return;
+  const list = Array.isArray(packets) ? packets : [];
+  if(!list.length){
+    el.innerHTML = emptyState('📡', 'No packet data recorded');
+    return;
+  }
+  const protoColors = {
+    TCP: 'rgba(0,245,255,0.9)',
+    UDP: 'rgba(255,204,0,0.9)',
+    ICMP: 'rgba(255,51,102,0.9)',
+    ARP: 'rgba(168,85,247,0.9)',
+    OTHER: 'rgba(200,232,240,0.7)',
+  };
+  el.innerHTML = list.slice(0, 30).map(p => {
+    const proto = (p.protocol || 'TCP').toUpperCase();
+    const col = protoColors[proto] || 'var(--c)';
+    const time = p.timestamp || '--:--:--';
+    const src = p.src || '127.0.0.1';
+    const dst = p.dst || '127.0.0.1';
+    const status = p.status || (p.direction === 'outbound' ? 'OUT' : 'IN');
+    const size = p.size ? `${p.size}B` : '';
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:9px;font-family:'JetBrains Mono',monospace">
+        <div style="display:flex;gap:8px;align-items:center;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          <span style="color:var(--dim);flex-shrink:0">${time}</span>
+          <span style="color:${col};font-weight:700;font-size:8px;padding:1px 4px;border-radius:3px;background:rgba(255,255,255,0.05);flex-shrink:0">${proto}</span>
+          <span style="color:var(--text);overflow:hidden;text-overflow:ellipsis">${src} → ${dst}</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;color:var(--dim);font-size:8px">
+          <span>${status}</span>
+          ${size ? `<span>${size}</span>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function fetchTrafficPackets(){
+  const pkts = await apiFetch('/api/traffic/packets');
+  if(Array.isArray(pkts) && !pkts._error){
+    renderPacketLog(pkts);
+  }
+}
+
+function drawTrafficChart(){
+  const canvas = document.getElementById('traffic-canvas');
+  if(!canvas) return;
+  canvas.width = canvas.parentElement?.offsetWidth || 600;
+  const ctx = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  if(trafficChartData.length < 1){
+    ctx.font = '10px JetBrains Mono';
+    ctx.fillStyle = 'rgba(200,232,240,0.6)';
+    ctx.textAlign = 'center';
+    ctx.fillText('Waiting for traffic data...', W / 2, H / 2);
+    return;
+  }
+  const max = Math.max(...trafficChartData.map(p => Number(p.bandwidth_mbps || 0)), 1);
+  ctx.beginPath();
+  trafficChartData.forEach((point, index) => {
+    const x = index * W / Math.max(trafficChartData.length - 1, 1);
+    const y = H - 20 - (Number(point.bandwidth_mbps || 0) / max) * (H - 40);
+    index ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  });
+  ctx.strokeStyle = 'rgba(0,245,255,0.9)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
 
 // ══════════════════════════════════════════════
-// 30-MINUTE THREAT FORECAST CHART
+// 3D EARTH / GLOBAL ATTACK MAP — 60FPS VECTOR SPHERE
 // ══════════════════════════════════════════════
-let predRAF = null;
-function startPredChart(){
-  const c = document.getElementById('pred-canvas');
-  if(!c) return;
-  if(predRAF) cancelAnimationFrame(predRAF);
+let globeRotY = 0;
+let globeRotX = 0.35;
+let globeRAF = null;
+let globeIsDragging = false;
+let globeLastMouseX = 0;
+let globeLastMouseY = 0;
 
-  function draw(){
-    if(!c || c.offsetParent === null) return;
-    c.width = c.parentElement?.offsetWidth || 500;
-    const ctx = c.getContext('2d'), W = c.width, H = 120;
-    ctx.clearRect(0, 0, W, H);
+const GLOBE_LAND_ANCHORS = [
+  [45, -100], [38, -95], [52, -105], [30, -90], [55, -120], [60, -140], [20, -100],
+  [-10, -55], [-20, -60], [-35, -65], [5, -70], [-5, -45],
+  [48, 2], [52, 13], [40, -4], [42, 12], [56, 37], [60, 10], [45, 25],
+  [0, 20], [10, 0], [-25, 28], [15, 30], [5, 40], [-10, 25], [-20, 20],
+  [30.04, 31.23], [27.0, 30.0],
+  [25, 45], [33, 44], [32, 53], [24, 54],
+  [35, 105], [40, 116], [30, 80], [20, 78], [15, 100], [55, 80], [60, 100], [35, 139],
+  [-25, 135], [-32, 116], [-37, 145], [-40, 174]
+];
 
-    // Background Grid
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-    ctx.lineWidth = 1;
-    for(let x = 0; x < W; x += 40){ ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-    for(let y = 0; y < H; y += 30){ ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+function projectGlobe3D(latDeg, lonDeg, radius, rotY, rotX, cx, cy){
+  const phi = latDeg * (Math.PI / 180);
+  const lambda = lonDeg * (Math.PI / 180);
+  
+  const x0 = radius * Math.cos(phi) * Math.sin(lambda);
+  const y0 = -radius * Math.sin(phi);
+  const z0 = radius * Math.cos(phi) * Math.cos(lambda);
 
-    const midX = W * 0.45;
+  const x1 = x0 * Math.cos(rotY) + z0 * Math.sin(rotY);
+  const z1 = -x0 * Math.sin(rotY) + z0 * Math.cos(rotY);
+  const y1 = y0;
 
-    // 1. Historical traffic (Solid cyan wave)
-    ctx.beginPath();
-    ctx.moveTo(0, H * 0.65);
-    for(let x = 0; x <= midX; x += 6){
-      const y = H * 0.65 + Math.sin(x * 0.05 + topoAnimTimer * 0.03) * 14 + Math.sin(x * 0.12) * 6;
-      ctx.lineTo(x, y);
+  const x2 = x1;
+  const y2 = y1 * Math.cos(rotX) - z1 * Math.sin(rotX);
+  const z2 = y1 * Math.sin(rotX) + z1 * Math.cos(rotX);
+
+  return {
+    x: cx + x2,
+    y: cy + y2,
+    z: z2,
+    visible: z2 > -radius * 0.1,
+    alpha: Math.max(0.1, (z2 + radius) / (2 * radius))
+  };
+}
+
+function attachGlobeInteractivity(canvas){
+  if(!canvas || canvas._dragAttached) return;
+  canvas._dragAttached = true;
+  canvas.addEventListener('mousedown', (e) => {
+    globeIsDragging = true;
+    globeLastMouseX = e.clientX;
+    globeLastMouseY = e.clientY;
+    canvas.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', (e) => {
+    if(!globeIsDragging) return;
+    const dx = e.clientX - globeLastMouseX;
+    const dy = e.clientY - globeLastMouseY;
+    globeRotY += dx * 0.008;
+    globeRotX = Math.max(-1.1, Math.min(1.1, globeRotX + dy * 0.008));
+    globeLastMouseX = e.clientX;
+    globeLastMouseY = e.clientY;
+  });
+  window.addEventListener('mouseup', () => {
+    globeIsDragging = false;
+    if(canvas) canvas.style.cursor = 'grab';
+  });
+}
+
+function startGlobeAnimation(){
+  if(globeRAF) cancelAnimationFrame(globeRAF);
+
+  function loop(){
+    if(!globeIsDragging){
+      globeRotY += 0.004;
     }
-    ctx.strokeStyle = 'rgba(0,245,255,0.85)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    ['globe-canvas', 'globe-canvas-full'].forEach(id => {
+      const c = document.getElementById(id);
+      if(c && c.offsetParent !== null){
+        attachGlobeInteractivity(c);
+        drawGlobe(c);
+      }
+    });
+    globeRAF = requestAnimationFrame(loop);
+  }
+  loop();
+}
 
-    // Area fill for historical
-    ctx.lineTo(midX, H);
-    ctx.lineTo(0, H);
-    const gHist = ctx.createLinearGradient(0, 0, 0, H);
-    gHist.addColorStop(0, 'rgba(0,245,255,0.18)');
-    gHist.addColorStop(1, 'rgba(0,245,255,0)');
-    ctx.fillStyle = gHist;
-    ctx.fill();
+function drawGlobe(c){
+  const ctx = c.getContext('2d');
+  const W = (c.width = c.parentElement?.offsetWidth || (c.id === 'globe-canvas-full' ? 800 : 500));
+  const H = (c.height = parseInt(c.getAttribute('height')) || (c.id === 'globe-canvas-full' ? 400 : 260));
+  const cx = W / 2, cy = H / 2;
+  const radius = Math.min(W, H) * 0.38;
 
-    // 2. Projected AI Threat Spike (Dashed neon red wave)
+  ctx.clearRect(0, 0, W, H);
+
+  // Background space gradient
+  const spaceGrad = ctx.createRadialGradient(cx, cy, radius * 0.2, cx, cy, radius * 1.3);
+  spaceGrad.addColorStop(0, 'rgba(0, 245, 255, 0.04)');
+  spaceGrad.addColorStop(0.7, 'rgba(2, 6, 18, 0.8)');
+  spaceGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = spaceGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Outer atmospheric glow
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(0, 245, 255, 0.45)';
+  ctx.lineWidth = 1.8;
+  ctx.shadowColor = 'rgba(0, 245, 255, 0.6)';
+  ctx.shadowBlur = 14;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Sphere body
+  const sphereGrad = ctx.createRadialGradient(cx - radius * 0.3, cy - radius * 0.3, 10, cx, cy, radius);
+  sphereGrad.addColorStop(0, 'rgba(10, 25, 45, 0.85)');
+  sphereGrad.addColorStop(1, 'rgba(2, 8, 18, 0.95)');
+  ctx.fillStyle = sphereGrad;
+  ctx.fill();
+
+  // Latitude Parallels
+  const lats = [-60, -30, 0, 30, 60];
+  lats.forEach(lat => {
     ctx.beginPath();
-    ctx.setLineDash([5, 4]);
-    ctx.moveTo(midX, H * 0.65);
-    for(let x = midX; x <= W; x += 6){
-      const progress = (x - midX) / (W - midX);
-      const threatSpike = Math.exp(-Math.pow(progress - 0.45, 2) / 0.06) * 45;
-      const y = (H * 0.65) - threatSpike + Math.sin(x * 0.08 + topoAnimTimer * 0.03) * 8;
-      ctx.lineTo(x, y);
+    let first = true;
+    for(let lon = 0; lon <= 360; lon += 6){
+      const p = projectGlobe3D(lat, lon, radius, globeRotY, globeRotX, cx, cy);
+      if(p.z > -radius * 0.1){
+        if(first){ ctx.moveTo(p.x, p.y); first = false; }
+        else { ctx.lineTo(p.x, p.y); }
+      } else {
+        first = true;
+      }
     }
-    ctx.strokeStyle = 'rgba(255,51,102,0.9)';
-    ctx.lineWidth = 2.2;
+    ctx.strokeStyle = lat === 0 ? 'rgba(0, 245, 255, 0.35)' : 'rgba(0, 245, 255, 0.12)';
+    ctx.lineWidth = lat === 0 ? 1.2 : 0.8;
     ctx.stroke();
-    ctx.setLineDash([]);
+  });
 
-    // Area fill for projected threat
-    ctx.lineTo(W, H);
-    ctx.lineTo(midX, H);
-    const gPred = ctx.createLinearGradient(0, 0, 0, H);
-    gPred.addColorStop(0, 'rgba(255,51,102,0.22)');
-    gPred.addColorStop(1, 'rgba(255,51,102,0)');
-    ctx.fillStyle = gPred;
-    ctx.fill();
-
-    // 3. Vertical 'NOW' separator line
+  // Longitude Meridians
+  for(let lon = 0; lon < 360; lon += 30){
     ctx.beginPath();
-    ctx.moveTo(midX, 0);
-    ctx.lineTo(midX, H);
-    ctx.strokeStyle = 'rgba(255,204,0,0.6)';
-    ctx.lineWidth = 1.5;
+    let first = true;
+    for(let lat = -90; lat <= 90; lat += 5){
+      const p = projectGlobe3D(lat, lon, radius, globeRotY, globeRotX, cx, cy);
+      if(p.z > -radius * 0.1){
+        if(first){ ctx.moveTo(p.x, p.y); first = false; }
+        else { ctx.lineTo(p.x, p.y); }
+      } else {
+        first = true;
+      }
+    }
+    ctx.strokeStyle = 'rgba(0, 245, 255, 0.10)';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
+
+  // Continent Landmass Points
+  GLOBE_LAND_ANCHORS.forEach(([lat, lon]) => {
+    [-1.5, 0, 1.5].forEach(dLat => {
+      [-2, 0, 2].forEach(dLon => {
+        const p = projectGlobe3D(lat + dLat, lon + dLon, radius, globeRotY, globeRotX, cx, cy);
+        if(p.z > 0){
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(0, 245, 255, ${p.alpha * 0.5})`;
+          ctx.fill();
+        }
+      });
+    });
+  });
+
+  // Local Node: Cairo / Egypt
+  const egyptLat = 30.04, egyptLon = 31.23;
+  const egyptProj = projectGlobe3D(egyptLat, egyptLon, radius, globeRotY, globeRotX, cx, cy);
+
+  if(egyptProj.z > -radius * 0.2){
+    const pulseProgress = (Date.now() * 0.002) % 1;
+    const pulseRad = 4 + pulseProgress * 18;
+    const pulseAlpha = (1 - pulseProgress) * 0.8 * egyptProj.alpha;
+
+    ctx.beginPath();
+    ctx.arc(egyptProj.x, egyptProj.y, pulseRad, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255, 204, 0, ${pulseAlpha})`;
+    ctx.lineWidth = 1.4;
     ctx.stroke();
 
-    ctx.font = '8px JetBrains Mono';
-    ctx.fillStyle = 'rgba(255,204,0,0.9)';
-    ctx.fillText('CURRENT (T-0)', midX - 60, 14);
-    ctx.fillStyle = 'rgba(255,51,102,0.9)';
-    ctx.fillText('+30m FORECAST HORIZON', midX + 10, 14);
-
-    // Peak alert marker
-    const peakX = midX + (W - midX) * 0.45;
-    const peakY = H * 0.22;
     ctx.beginPath();
-    ctx.arc(peakX, peakY, 4, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,51,102,1)';
-    ctx.shadowColor = 'rgba(255,51,102,0.9)';
+    ctx.arc(egyptProj.x, egyptProj.y, 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 204, 0, 0.95)';
+    ctx.shadowColor = 'rgba(255, 204, 0, 0.9)';
     ctx.shadowBlur = 10;
     ctx.fill();
     ctx.shadowBlur = 0;
 
     ctx.font = '9px JetBrains Mono';
-    ctx.fillStyle = 'rgba(255,51,102,0.95)';
-    ctx.fillText('⚠️ Predicted Surge (94%)', peakX - 55, peakY - 8);
+    ctx.fillStyle = 'rgba(255, 204, 0, 0.9)';
+    ctx.textAlign = 'left';
+    ctx.fillText('⚡ Egypt (Local Network)', egyptProj.x + 8, egyptProj.y - 4);
+  }
 
-    predRAF = requestAnimationFrame(draw);
+  // Real Threat Points & Attack Vectors
+  const rawAttacks = state.attacks || [];
+  const extAttacks = rawAttacks.filter(a => {
+    const ip = a.source_ip || a.ip;
+    return ip && !ip.startsWith('192.168.') && !ip.startsWith('10.') && !ip.startsWith('127.') && (a.geo_lat || a.lat);
+  });
+
+  if(extAttacks.length > 0){
+    extAttacks.slice(0, 12).forEach((atk, idx) => {
+      const srcLat = atk.geo_lat || atk.lat || 0;
+      const srcLon = atk.geo_lon || atk.lon || 0;
+      const srcProj = projectGlobe3D(srcLat, srcLon, radius, globeRotY, globeRotX, cx, cy);
+
+      if(srcProj.z > -radius * 0.2){
+        ctx.beginPath();
+        ctx.arc(srcProj.x, srcProj.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 51, 102, 0.95)';
+        ctx.shadowColor = 'rgba(255, 51, 102, 0.9)';
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        if(egyptProj.z > -radius * 0.2){
+          ctx.beginPath();
+          const arcSteps = 16;
+          for(let s = 0; s <= arcSteps; s++){
+            const t = s / arcSteps;
+            const curLat = srcLat + (egyptLat - srcLat) * t;
+            const curLon = srcLon + (egyptLon - srcLon) * t;
+            const elevation = Math.sin(t * Math.PI) * (radius * 0.28);
+            const pt = projectGlobe3D(curLat, curLon, radius + elevation, globeRotY, globeRotX, cx, cy);
+            if(s === 0) ctx.moveTo(pt.x, pt.y);
+            else ctx.lineTo(pt.x, pt.y);
+          }
+          ctx.strokeStyle = 'rgba(255, 51, 102, 0.55)';
+          ctx.lineWidth = 1.6;
+          ctx.stroke();
+
+          const prog = ((Date.now() * 0.001) + (idx * 0.3)) % 1;
+          const curLat = srcLat + (egyptLat - srcLat) * prog;
+          const curLon = srcLon + (egyptLon - srcLon) * prog;
+          const elevation = Math.sin(prog * Math.PI) * (radius * 0.28);
+          const particle = projectGlobe3D(curLat, curLon, radius + elevation, globeRotY, globeRotX, cx, cy);
+          if(particle.z > -radius * 0.2){
+            ctx.beginPath();
+            ctx.arc(particle.x, particle.y, 2.8, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 204, 0, 0.95)';
+            ctx.shadowColor = 'rgba(255, 204, 0, 0.9)';
+            ctx.shadowBlur = 6;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          }
+        }
+      }
+    });
+  }
+}
+
+
+// ══════════════════════════════════════════════
+// THREAT DETECTION RADAR — 60FPS CONTINUOUS SWEEP
+// ══════════════════════════════════════════════
+let radarSweepAngle = 0;
+let radarRAF = null;
+
+function startRadarAnimation(){
+  const canvas = document.getElementById('radar-canvas');
+  if(!canvas) return;
+  if(radarRAF) cancelAnimationFrame(radarRAF);
+
+  function draw(){
+    if(!canvas || canvas.offsetParent === null) return;
+    canvas.width = canvas.parentElement?.offsetWidth || 600;
+    const ctx = canvas.getContext('2d'), W = canvas.width, H = 280;
+    const cx = W / 2, cy = H / 2, radius = Math.min(W, H) * 0.42;
+    ctx.clearRect(0, 0, W, H);
+
+    // Background radial glow
+    const bgGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, radius);
+    bgGrad.addColorStop(0, 'rgba(0, 245, 255, 0.05)');
+    bgGrad.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+    ctx.fillStyle = bgGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Concentric range rings
+    for(let ring = 1; ring <= 3; ring++){
+      const r = radius * (ring / 3);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.strokeStyle = ring === 3 ? 'rgba(0, 245, 255, 0.4)' : 'rgba(0, 245, 255, 0.18)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Ring distance labels
+      ctx.font = '8px JetBrains Mono';
+      ctx.fillStyle = 'rgba(0, 245, 255, 0.5)';
+      ctx.fillText(`+${ring * 10}m`, cx + 4, cy - r + 10);
+    }
+
+    // Crosshairs & Azimuth lines (8 directions)
+    for(let axis = 0; axis < 8; axis++){
+      const angle = axis * (Math.PI / 4);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
+      ctx.strokeStyle = axis % 2 === 0 ? 'rgba(0, 245, 255, 0.25)' : 'rgba(0, 245, 255, 0.10)';
+      ctx.lineWidth = axis % 2 === 0 ? 1 : 0.8;
+      ctx.stroke();
+    }
+
+    // Compass degree labels
+    const degs = ['000°', '045°', '090°', '135°', '180°', '225°', '270°', '315°'];
+    ctx.font = '8px JetBrains Mono';
+    ctx.fillStyle = 'rgba(200, 232, 240, 0.6)';
+    ctx.textAlign = 'center';
+    degs.forEach((d, i) => {
+      const a = i * (Math.PI / 4) - Math.PI / 2;
+      const lx = cx + Math.cos(a) * (radius + 12);
+      const ly = cy + Math.sin(a) * (radius + 12) + 3;
+      ctx.fillText(d, lx, ly);
+    });
+
+    // Radar Sweep Beam with fading phosphor trail
+    radarSweepAngle = (radarSweepAngle + 0.025) % (Math.PI * 2);
+    const trailSegments = 25;
+    for(let i = 0; i < trailSegments; i++){
+      const a1 = radarSweepAngle - (i / trailSegments) * 0.45;
+      const a2 = radarSweepAngle - ((i + 1) / trailSegments) * 0.45;
+      const alpha = (1 - (i / trailSegments)) * 0.22;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, radius, a2, a1);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(0, 245, 255, ${alpha})`;
+      ctx.fill();
+    }
+
+    // Main sweep line
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(radarSweepAngle) * radius, cy + Math.sin(radarSweepAngle) * radius);
+    ctx.strokeStyle = 'rgba(0, 255, 200, 0.9)';
+    ctx.lineWidth = 1.8;
+    ctx.shadowColor = 'rgba(0, 255, 200, 0.8)';
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Collect radar blips from predictions or active telemetry
+    const preds = Array.isArray(state.predictions) ? state.predictions : [];
+    let blips = [];
+    if(preds.length && preds[0].blips && preds[0].blips.length){
+      blips = preds[0].blips;
+    } else if(preds.length){
+      blips = preds.slice(0, 6).map((p, idx) => ({
+        angle: (idx * 65 + 35) % 360,
+        distance: Math.max(0.25, Math.min(0.88, Number(p.probability || 0.4))),
+        severity: p.severity || (p.probability > 0.7 ? 'high' : 'medium'),
+        label: p.predicted_attack || 'Threat Vector',
+        prob: p.probability
+      }));
+    } else {
+      blips = [
+        { angle: 42, distance: 0.35, severity: 'low', label: 'Local Host' },
+        { angle: 138, distance: 0.48, severity: 'low', label: 'Gateway Node' },
+        { angle: 225, distance: 0.62, severity: 'low', label: 'Subnet Monitor' },
+        { angle: 310, distance: 0.40, severity: 'low', label: 'DNS Resolver' }
+      ];
+    }
+
+    // Render Blips
+    blips.forEach((b) => {
+      const bRad = (b.angle * Math.PI) / 180 - Math.PI / 2;
+      const dist = radius * (b.distance || 0.5);
+      const bx = cx + Math.cos(bRad) * dist;
+      const by = cy + Math.sin(bRad) * dist;
+
+      // Angular difference to sweep beam
+      let angleDiff = Math.abs(radarSweepAngle - ((b.angle * Math.PI) / 180));
+      if(angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
+      const isSwept = angleDiff < 0.3;
+
+      const isHigh = b.severity === 'high' || b.severity === 'critical';
+      const isMed = b.severity === 'medium';
+      const col = isHigh ? 'rgba(255, 51, 102, ' : (isMed ? 'rgba(255, 170, 0, ' : 'rgba(0, 255, 136, ');
+
+      // Glowing flare ring when swept
+      if(isSwept){
+        ctx.beginPath();
+        ctx.arc(bx, by, 10, 0, Math.PI * 2);
+        ctx.strokeStyle = col + '0.7)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      // Blip center dot
+      ctx.beginPath();
+      ctx.arc(bx, by, isHigh ? 5 : 4, 0, Math.PI * 2);
+      ctx.fillStyle = col + (isSwept ? '1.0)' : '0.85)');
+      ctx.shadowColor = col + '0.9)';
+      ctx.shadowBlur = isSwept ? 12 : 6;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Blip label
+      ctx.font = '8px JetBrains Mono';
+      ctx.fillStyle = 'rgba(200, 232, 240, 0.85)';
+      ctx.textAlign = 'left';
+      ctx.fillText(b.label || 'Target', bx + 7, by + 3);
+    });
+
+    // Center origin reticle
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0, 245, 255, 0.9)';
+    ctx.fill();
+
+    radarRAF = requestAnimationFrame(draw);
+  }
+
+  draw();
+}
+
+function drawThreatRadar(){
+  startRadarAnimation();
+}
+
+// ══════════════════════════════════════════════
+// 30-MINUTE THREAT FORECAST CHART (DUAL-CURVE)
+// ══════════════════════════════════════════════
+let predChartRAF = null;
+let forecastData = null;
+
+async function fetchForecastData(){
+  try {
+    const d = await apiFetch('/api/ai/forecast');
+    if(d && !d._error) forecastData = d;
+  } catch(e){}
+}
+
+function startPredChart(){
+  const c = document.getElementById('pred-canvas');
+  if(!c) return;
+  if(predChartRAF) cancelAnimationFrame(predChartRAF);
+  fetchForecastData();
+
+  function draw(){
+    if(!c || c.offsetParent === null) return;
+    c.width = c.parentElement?.offsetWidth || 600;
+    const ctx = c.getContext('2d'), W = c.width, H = 120;
+    ctx.clearRect(0, 0, W, H);
+
+    const padL = 40, padR = 20, padT = 15, padB = 25;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const midX = padL + plotW * 0.5;
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.lineWidth = 1;
+    for(let i = 0; i <= 3; i++){
+      const y = padT + (plotH * (i / 3));
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(W - padR, y);
+      ctx.stroke();
+    }
+
+    // Time ticks
+    const ticks = [
+      { t: '-30m', x: padL },
+      { t: '-15m', x: padL + plotW * 0.25 },
+      { t: 'NOW', x: midX },
+      { t: '+15m', x: padL + plotW * 0.75 },
+      { t: '+30m', x: W - padR }
+    ];
+    ctx.font = '8px JetBrains Mono';
+    ctx.fillStyle = 'rgba(200, 232, 240, 0.55)';
+    ctx.textAlign = 'center';
+    ticks.forEach(tk => {
+      ctx.fillText(tk.t, tk.x, H - 8);
+    });
+
+    // Vertical line for NOW
+    ctx.beginPath();
+    ctx.moveTo(midX, padT);
+    ctx.lineTo(midX, padT + plotH);
+    ctx.strokeStyle = 'rgba(0, 245, 255, 0.4)';
+    ctx.setLineDash([3, 3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Data curves
+    const hist = forecastData?.historical || [
+      {t:-30, val: 10}, {t:-20, val: 12}, {t:-10, val: 14}, {t:0, val: 15}
+    ];
+    const fore = forecastData?.forecast || [
+      {t:5, val: 15.5, upper: 18, lower: 13}, {t:15, val: 16.2, upper: 20, lower: 12}, {t:30, val: 16.8, upper: 22, lower: 11}
+    ];
+
+    const allVals = [...hist.map(d=>d.val), ...fore.map(d=>d.val), ...fore.map(d=>d.upper||d.val)];
+    const maxVal = Math.max(25, Math.max(...allVals) * 1.2);
+    const minVal = 0;
+
+    function valToY(v){
+      return padT + plotH - ((v - minVal) / (maxVal - minVal)) * plotH;
+    }
+    function histX(t){
+      return padL + ((t + 30) / 30) * (plotW * 0.5);
+    }
+    function foreX(t){
+      return midX + (t / 30) * (plotW * 0.5);
+    }
+
+    // Historical Curve (Solid Cyan with Area Fill)
+    if(hist.length > 1){
+      ctx.beginPath();
+      hist.forEach((pt, idx) => {
+        const x = histX(pt.t), y = valToY(pt.val);
+        if(idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = 'rgba(0, 245, 255, 0.9)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Area fill
+      const lastHistX = histX(hist[hist.length-1].t);
+      const firstHistX = histX(hist[0].t);
+      ctx.lineTo(lastHistX, padT + plotH);
+      ctx.lineTo(firstHistX, padT + plotH);
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
+      grad.addColorStop(0, 'rgba(0, 245, 255, 0.25)');
+      grad.addColorStop(1, 'rgba(0, 245, 255, 0.0)');
+      ctx.fillStyle = grad;
+      ctx.fill();
+    }
+
+    // Forecast Confidence Envelope
+    if(fore.length > 1){
+      ctx.beginPath();
+      fore.forEach((pt, idx) => {
+        const x = foreX(pt.t), y = valToY(pt.upper || pt.val * 1.15);
+        if(idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      for(let i = fore.length - 1; i >= 0; i--){
+        const x = foreX(fore[i].t), y = valToY(fore[i].lower || fore[i].val * 0.85);
+        ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255, 51, 102, 0.08)';
+      ctx.fill();
+
+      // Forecast Predicted Trajectory (Dashed Neon-Pink)
+      ctx.beginPath();
+      const startY = hist.length ? valToY(hist[hist.length-1].val) : valToY(fore[0].val);
+      ctx.moveTo(midX, startY);
+      fore.forEach(pt => {
+        ctx.lineTo(foreX(pt.t), valToY(pt.val));
+      });
+      ctx.strokeStyle = 'rgba(255, 51, 102, 0.9)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Glowing dot at NOW
+    if(hist.length){
+      const lastY = valToY(hist[hist.length-1].val);
+      ctx.beginPath();
+      ctx.arc(midX, lastY, 4, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0, 245, 255, 1.0)';
+      ctx.shadowColor = 'rgba(0, 245, 255, 0.9)';
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    predChartRAF = requestAnimationFrame(draw);
   }
 
   draw();
@@ -2444,6 +3578,10 @@ function showPanel(name,el){
   }
   if(el) el.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>{if((n.getAttribute('onclick')||'').includes(`'${name}'`)) n.classList.add('active');});
+  if(name==='traffic') setTimeout(drawTrafficChart, 0);
+  if(name==='prediction') setTimeout(drawThreatRadar, 0);
+  if(name==='sysmon') setTimeout(loadSysmonPanel, 0);
+  else if(typeof stopSysmonTimers === 'function') stopSysmonTimers();
 }
 
 function toggleSidebar(){
@@ -2534,7 +3672,8 @@ function startParticles(){
 // ── Live traffic polling every 5s ──
 setInterval(async ()=>{
   const d = await apiFetch('/api/traffic/live');
-  if(d && !d.error) addTrafficPoint(d);
+  if(d && !d._error && !d.error) addTrafficPoint(d);
+  await fetchTrafficPackets();
 }, 5000);
 
 // Poll health every 30s
@@ -2553,7 +3692,37 @@ function setAvSpeech(t){const e=document.getElementById('avSpeech');if(e)e.textC
 function fmtTime(ts){if(!ts)return'--';try{const d=new Date(ts);return d.toTimeString().slice(0,8);}catch{return'--';}}
 function emptyState(icon,text){return`<div class="empty-state"><div class="es-icon">${icon}</div><div class="es-text">${text}</div></div>`;}
 function attackIcon(t){const m={ddos:'💥',port_scan:'🔍',brute_force:'🔑',anomaly:'🧠',malware:'🦠',DDoS:'💥','Port Scan':'🔍','Brute Force':'🔑'};return m[t]||'⚔️';}
-function devIcon(t){const m={router:'🔀',pc:'💻',phone:'📱',server:'🗄️',printer:'🖨️',iot:'📷',camera:'📷',unknown:'❓'};return m[t]||'💻';}
+function devIcon(t){
+  if(!t) return '❓';
+  const m = {
+    'Windows PC': '💻',
+    'Windows Laptop': '💻',
+    'Linux PC': '💻',
+    'Linux Server': '🖥️',
+    'macOS Computer': '💻',
+    'iPhone': '📱',
+    'iPad': '📱',
+    'Android Phone': '📱',
+    'Android Tablet': '📱',
+    'Smart TV': '📺',
+    'Printer': '🖨️',
+    'Router': '📡',
+    'Switch': '🔀',
+    'Access Point': '📶',
+    'Network Gateway': '🌐',
+    'IoT Device': '🔌',
+    'Camera / IP Camera': '📷',
+    'NAS / Storage': '🗄️',
+    'Server': '🖥️',
+    'Virtual Machine': '🔲',
+    'Network Device': '🌐',
+    'Unknown Device': '❓',
+    'router': '📡', 'gateway': '🌐', 'pc': '💻', 'laptop': '💻',
+    'phone': '📱', 'server': '🖥️', 'printer': '🖨️', 'iot': '🔌',
+    'camera': '📷', 'tv': '📺', 'unknown': '❓'
+  };
+  return m[t] || '💻';
+}
 function normalizeComponents(components){
   if(!components) return null;
   if(typeof components === 'string'){
@@ -2575,6 +3744,12 @@ function normalizeTraffic(data){
   }
   if(traffic.packets_per_sec === undefined){
     traffic.packets_per_sec = ((traffic.packets_in||0) + (traffic.packets_out||0)) / 5;
+  }
+  if(traffic.protocol_distribution){
+    if(traffic.tcp_count === undefined) traffic.tcp_count = traffic.protocol_distribution.tcp || 0;
+    if(traffic.udp_count === undefined) traffic.udp_count = traffic.protocol_distribution.udp || 0;
+    if(traffic.icmp_count === undefined) traffic.icmp_count = traffic.protocol_distribution.icmp || 0;
+    if(traffic.other_count === undefined) traffic.other_count = traffic.protocol_distribution.other || 0;
   }
   return traffic;
 }
@@ -2741,7 +3916,12 @@ async function cmdRun(cmd){
 
   // ── HorusShield built-in command ──
   if(isHorusCommand(bareCmd)){
-    await cmdRunHorus(bareCmd);
+    try {
+      await cmdRunHorus(bareCmd);
+    } catch(err){
+      console.error('cmdRunHorus error:', err);
+      cmdPrint('err', `Error: ${err.message}`);
+    }
     return;
   }
 
@@ -2784,12 +3964,22 @@ async function cmdExecuteReal(operation, target='', showSpinner=true){
   }
 
   try {
-    const r = await fetch(`${API}/api/terminal/run`, {
+    let r = await fetch(`${API}/api/terminal/run`, {
       method: 'POST',
       headers: authHeaders({'Content-Type': 'application/json'}),
       body: JSON.stringify({ operation, target })
     });
-    const data = await r.json();
+    if(r.status === 401 || r.status === 403){
+      const ok = await ensureAuthenticated();
+      if(ok){
+        r = await fetch(`${API}/api/terminal/run`, {
+          method: 'POST',
+          headers: authHeaders({'Content-Type': 'application/json'}),
+          body: JSON.stringify({ operation, target })
+        });
+      }
+    }
+    const data = await r.json().catch(()=>({error:'Invalid response from server'}));
 
     // Remove spinner
     document.getElementById('cmd-spinner')?.remove();
@@ -2834,12 +4024,22 @@ async function cmdExecShell(command){
   document.getElementById('cmd-output').scrollTop = 99999;
 
   try {
-    const r = await fetch(`${API}/api/terminal/exec`, {
+    let r = await fetch(`${API}/api/terminal/exec`, {
       method: 'POST',
       headers: authHeaders({'Content-Type': 'application/json'}),
       body: JSON.stringify({ command, shell: currentShell })
     });
-    const data = await r.json();
+    if(r.status === 401 || r.status === 403){
+      const ok = await ensureAuthenticated();
+      if(ok){
+        r = await fetch(`${API}/api/terminal/exec`, {
+          method: 'POST',
+          headers: authHeaders({'Content-Type': 'application/json'}),
+          body: JSON.stringify({ command, shell: currentShell })
+        });
+      }
+    }
+    const data = await r.json().catch(()=>({error:'Invalid response from server'}));
     document.getElementById('cmd-spinner')?.remove();
 
     if(r.status === 401 || r.status === 403){
@@ -2869,14 +4069,26 @@ async function cmdExecShell(command){
   document.getElementById('cmd-output').scrollTop = document.getElementById('cmd-output').scrollHeight;
 }
 
+function checkCmdResult(d){
+  if(!d) { cmdPrint('err','Backend unreachable'); return false; }
+  if(d._error){
+    if(d.status === 0) cmdPrint('err','Backend unreachable');
+    else cmdPrint('err', `[HTTP ${d.status}] ${d.message}`);
+    return false;
+  }
+  return true;
+}
+
 async function cmdRunHorus(subcmd){
   const key = subcmd.trim().toLowerCase().split(/\s+/)[0];
   const cmds = {
     'status': async () => {
       const d = await apiFetch('/api/dashboard/stats');
-      if(!d){ cmdPrint('err','Backend unreachable'); return; }
-      const sc = d.security_score || '--';
-      const bar = '█'.repeat(Math.round(sc/10)) + '░'.repeat(10-Math.round(sc/10));
+      if(!checkCmdResult(d)) return;
+      const rawSc = Number(d.security_score);
+      const sc = isNaN(rawSc) ? 100 : Math.max(0, Math.min(100, Math.round(rawSc)));
+      const barFilled = Math.max(0, Math.min(10, Math.round(sc / 10)));
+      const bar = '█'.repeat(barFilled) + '░'.repeat(10 - barFilled);
       cmdPrint('info','── HORUSSHIELD STATUS ──────────────────────────');
       cmdPrint(sc>=90?'out':sc>=70?'warn':'err', `  Score    : ${sc}/100  [${bar}]`);
       cmdPrint('out', `  Attacks  : ${d.active_attacks||0} active`);
@@ -2887,60 +4099,77 @@ async function cmdRunHorus(subcmd){
     },
     'devices': async () => {
       const d = await apiFetch('/api/devices/');
-      if(!d){ cmdPrint('err','Backend unreachable'); return; }
-      if(!d.length){ cmdPrint('dim','  No devices found.'); return; }
+      if(!checkCmdResult(d)) return;
+      const list = Array.isArray(d) ? d : [];
+      if(!list.length){ cmdPrint('dim','  No devices discovered yet.'); return; }
       cmdPrint('info','── DEVICES ─────────────────────────────────────');
       cmdPrint('dim', `  ${'IP'.padEnd(16)} ${'HOSTNAME'.padEnd(20)} ${'TYPE'.padEnd(12)} STATUS`);
       cmdPrint('dim', '  ' + '─'.repeat(60));
-      d.forEach(v => {
-        const st = v.status||'unknown';
+      list.forEach(v => {
+        const ip = String(v.ip_address || v.ip || '--');
+        const host = String(v.hostname || '--').slice(0, 18);
+        const type = String(v.device_type || 'unknown');
+        const st = String(v.status || 'unknown');
         const c  = st==='trusted'?'out':st==='blocked'?'err':'warn';
-        cmdPrint(c, `  ${(v.ip_address||'--').padEnd(16)} ${(v.hostname||'--').slice(0,18).padEnd(20)} ${(v.device_type||'unknown').padEnd(12)} ${st.toUpperCase()}`);
+        cmdPrint(c, `  ${ip.padEnd(16)} ${host.padEnd(20)} ${type.padEnd(12)} ${st.toUpperCase()}`);
       });
       cmdPrint('dim','────────────────────────────────────────────────');
     },
     'threats': async () => {
-      const d = await apiFetch('/api/attacks/active');
-      if(!d){ cmdPrint('err','Backend unreachable'); return; }
-      if(!d.length){ cmdPrint('out','  ✅ No active threats — network is secure.'); return; }
-      cmdPrint('err',`  ⚠️  ${d.length} ACTIVE THREAT(S)`);
-      d.forEach((t,i) => {
+      const d = await apiFetch('/api/attacks/');
+      if(!checkCmdResult(d)) return;
+      const list = Array.isArray(d) ? d : (Array.isArray(d?.attacks) ? d.attacks : []);
+      if(!list.length){ cmdPrint('out','  ✅ No active threats — network is secure.'); return; }
+      cmdPrint('err',`  ⚠️  ${list.length} ACTIVE THREAT(S)`);
+      list.forEach((t,i) => {
         const c = t.severity==='critical'||t.severity==='high'?'err':'warn';
-        cmdPrint(c, `  [${i+1}] ${(t.attack_type||'?').toUpperCase().padEnd(14)} ${(t.source_ip||'--').padEnd(18)} ${(t.severity||'').toUpperCase()} (${Math.round((t.confidence||0)*100)}%)`);
+        const atkType = String(t.attack_type || t.type || '?').toUpperCase();
+        const srcIp = String(t.source_ip || '--');
+        const sev = String(t.severity || 'medium').toUpperCase();
+        const conf = Math.round(Number(t.confidence || 0) * 100);
+        cmdPrint(c, `  [${i+1}] ${atkType.padEnd(14)} ${srcIp.padEnd(18)} ${sev} (${conf}%)`);
       });
       cmdPrint('dim','────────────────────────────────────────────────');
     },
     'traffic': async () => {
       const d = await apiFetch('/api/traffic/live');
-      if(!d){ cmdPrint('err','Backend unreachable'); return; }
+      if(!checkCmdResult(d)) return;
       cmdPrint('info','── NETWORK TRAFFIC ─────────────────────────────');
-      cmdPrint('out', `  Bandwidth  : ${(d.bandwidth_mbps||0).toFixed(2)} Mbps`);
-      cmdPrint('out', `  Packets/s  : In: ${d.packets_in||0} | Out: ${d.packets_out||0}`);
+      const bw = Number(d.bandwidth_mbps || 0).toFixed(2);
+      const down = Number(d.download_mbps || 0).toFixed(2);
+      const up = Number(d.upload_mbps || 0).toFixed(2);
+      const pps = Math.round(Number(d.packets_per_sec || 0));
+      cmdPrint('out', `  Bandwidth  : ${bw} Mbps (Down: ${down} | Up: ${up})`);
+      cmdPrint('out', `  Packets/s  : ${pps}`);
       cmdPrint('out', `  Protocols  : TCP: ${d.tcp_count||0} | UDP: ${d.udp_count||0} | ICMP: ${d.icmp_count||0}`);
       cmdPrint('out', `  Connections: ${d.active_connections||0} active`);
       cmdPrint('dim', '────────────────────────────────────────────────');
     },
     'score': async () => {
       const d = await apiFetch('/api/dashboard/stats');
-      if(!d){ cmdPrint('err','Backend unreachable'); return; }
-      const sc = d.security_score||0;
-      const bar = '█'.repeat(Math.round(sc/10)) + '░'.repeat(10-Math.round(sc/10));
+      if(!checkCmdResult(d)) return;
+      const rawSc = Number(d.security_score);
+      const sc = isNaN(rawSc) ? 100 : Math.max(0, Math.min(100, Math.round(rawSc)));
+      const barFilled = Math.max(0, Math.min(10, Math.round(sc / 10)));
+      const bar = '█'.repeat(barFilled) + '░'.repeat(10 - barFilled);
       cmdPrint(sc>=90?'out':sc>=70?'warn':'err', `  Score: ${sc}/100  [${bar}]  ${sc>=90?'✅ SECURE':sc>=70?'⚠️ MODERATE RISK':sc>=40?'🔶 AT RISK':'🔴 CRITICAL'}`);
     },
     'alerts': async () => {
       const d = await apiFetch('/api/dashboard/alerts');
-      if(!d){ cmdPrint('err','Backend unreachable'); return; }
-      if(!d.length){ cmdPrint('out','  No recent alerts. ✅'); return; }
+      if(!checkCmdResult(d)) return;
+      const list = Array.isArray(d) ? d : (Array.isArray(d?.alerts) ? d.alerts : []);
+      if(!list.length){ cmdPrint('out','  ✅ No recent alerts.'); return; }
       cmdPrint('info','── ALERTS ──────────────────────────────────────');
-      d.slice(0,8).forEach(a => {
+      list.slice(0,8).forEach(a => {
         const c = a.severity==='critical'||a.severity==='high'?'err':a.severity==='medium'?'warn':'dim';
-        cmdPrint(c, `  [${new Date(a.created_at).toTimeString().slice(0,8)||'--'}] ${(a.title||'').slice(0,55)}`);
+        const timeStr = a.created_at ? new Date(a.created_at).toTimeString().slice(0,8) : '--:--:--';
+        cmdPrint(c, `  [${timeStr}] ${(a.title||'').slice(0,55)}`);
       });
       cmdPrint('dim','────────────────────────────────────────────────');
     },
     'predict': async () => {
       const d = await apiFetch('/api/ai/predictions');
-      if(!d){ cmdPrint('err','Backend unreachable'); return; }
+      if(!checkCmdResult(d)) return;
       cmdPrint('info','── AI PREDICTIONS ──────────────────────────────');
       const preds = Array.isArray(d) ? d : (d.predictions || []);
       if(!preds.length){
@@ -2957,7 +4186,7 @@ async function cmdRunHorus(subcmd){
     },
     'honeypot': async () => {
       const d = await apiFetch('/api/honeypot/events');
-      if(!d){ cmdPrint('err','Backend unreachable'); return; }
+      if(!checkCmdResult(d)) return;
       cmdPrint('info','── HONEYPOT TRAPS ──────────────────────────────');
       const evts = Array.isArray(d) ? d : (d.events || []);
       if(!evts.length){
@@ -2971,53 +4200,66 @@ async function cmdRunHorus(subcmd){
     },
     'mesh': async () => {
       const d = await apiFetch('/api/mesh/topology');
-      if(!d){ cmdPrint('err','Backend unreachable'); return; }
-      const nodes = d.nodes || [];
-      const links = d.links || [];
+      if(!checkCmdResult(d)) return;
+      const nodes = Array.isArray(d.nodes) ? d.nodes : [];
+      const links = Array.isArray(d.links) ? d.links : (Array.isArray(d.edges) ? d.edges : []);
       cmdPrint('info','── MESH TOPOLOGY ───────────────────────────────');
       cmdPrint('out', `  Active Nodes: ${nodes.filter(n=>n.status==='active').length} / ${nodes.length}`);
       cmdPrint('out', `  Mesh Links  : ${links.length}`);
       if(nodes.length){
         nodes.slice(0,6).forEach(n => {
-          cmdPrint('dim', `  Node: ${(n.ip||n.id||'?').padEnd(18)} Type: ${(n.type||'node').padEnd(10)} Status: ${n.status||'active'}`);
+          const nid = String(n.ip || n.id || '?');
+          const ntype = String(n.type || 'node');
+          const nst = String(n.status || 'active');
+          cmdPrint('dim', `  Node: ${nid.padEnd(18)} Type: ${ntype.padEnd(10)} Status: ${nst}`);
         });
       }
       cmdPrint('dim','────────────────────────────────────────────────');
     },
     'scan': async () => {
       const d = await apiFetch('/api/vscanner/history');
-      if(!d){ cmdPrint('err','Backend unreachable'); return; }
+      if(!checkCmdResult(d)) return;
       cmdPrint('info','── V-8 WEB SCANS ───────────────────────────────');
-      if(!d.length){
+      const list = Array.isArray(d) ? d : (d.scans || []);
+      if(!list.length){
         cmdPrint('dim','  No scans run yet. Use the Web Security Scanner panel to start a scan.');
       } else {
-        d.slice(0,5).forEach(s => {
-          cmdPrint('out', `  ${s.target_url.padEnd(28)} [${s.status.toUpperCase()}] ${s.findings_count||0} findings`);
+        list.slice(0,5).forEach(s => {
+          const target = String(s.target_url || s.target || '--');
+          const st = String(s.status || 'unknown').toUpperCase();
+          cmdPrint('out', `  ${target.padEnd(28)} [${st}] ${s.findings_count||0} findings`);
         });
       }
       cmdPrint('dim','────────────────────────────────────────────────');
     },
     'lockdown': async () => {
-      await activateAnubis();
+      if(typeof activateAnubis === 'function') await activateAnubis();
+      else activateEmergencyUI();
       cmdPrint('err','  🔱 ANUBIS LOCKDOWN ACTIVATED');
       cmdPrint('warn','  Type "unlock" or "hs unlock" to deactivate.');
     },
     'unlock': async () => {
-      await deactivateAnubis();
+      if(typeof deactivateAnubis === 'function') await deactivateAnubis();
+      else deactivateEmergencyUI();
       cmdPrint('out','  ✅ Lockdown deactivated.');
     },
   };
 
   const fn = cmds[key];
   if(fn){
-    await fn();
+    try {
+      await fn();
+    } catch(err){
+      console.error('cmdRunHorus error:', err);
+      cmdPrint('err', `Error: ${err.message}`);
+    }
   } else {
     cmdPrint('err', `  Unknown command: "${subcmd}". Type "help" or "hs help".`);
   }
 }
 
 function renderNetmapPanel(devices){
-  const devs = (devices && devices.length >= 2) ? devices : DEMO_TOPOLOGY_DEVICES;
+  const devs = Array.isArray(devices) ? devices : [];
   const list = document.getElementById('netmap-device-list');
   const count = document.getElementById('netmap-count');
   const tot   = document.getElementById('nm-total');
@@ -3027,15 +4269,27 @@ function renderNetmapPanel(devices){
   if(unk) unk.textContent = unknownCount;
   if(count) count.textContent = `${devs.length} device(s) — ${unknownCount} unknown`;
   if(!list) return;
-  const icons = {router:'🔀',gateway:'🔀',pc:'💻',phone:'📱',server:'🗄️',printer:'🖨️',iot:'📷',camera:'📷',unknown:'❓'};
-  list.innerHTML = devs.map(d=>`
-    <div style="display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:7px;margin-bottom:4px;
-         background:${d.status==='unknown'?'rgba(255,51,102,.05)':'rgba(0,245,255,.03)'};
-         border:1px solid ${d.status==='unknown'?'rgba(255,51,102,.2)':'var(--border)'}">
-      <span style="font-size:14px">${icons[d.device_type]||'💻'}</span>
+  list.innerHTML = devs.map(d=>{
+    const icon = d.icon || devIcon(d.device_type);
+    const dType = d.device_type || 'Unknown Device';
+    const isUnkType = dType === 'Unknown Device' || dType === 'unknown';
+    const isUnkStatus = d.status === 'unknown' || d.status === 'suspicious';
+    const conf = typeof d.confidence === 'number' ? d.confidence : (parseInt(d.confidence) || 0);
+    return `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;margin-bottom:4px;
+         background:${isUnkStatus?'rgba(255,51,102,.05)':'rgba(0,245,255,.03)'};
+         border:1px solid ${isUnkStatus?'rgba(255,51,102,.2)':'var(--border)'}">
+      <span style="font-size:16px">${icon}</span>
       <div style="flex:1;min-width:0">
-        <div style="font-size:10px;font-weight:600;color:${d.status==='unknown'?'var(--r)':'var(--text)'}; white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-          ${d.hostname||'Unknown'} ${d.is_gateway?'⭐':''}
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="font-size:10px;font-weight:700;color:${isUnkType?'var(--r)':'var(--c)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            ${dType}
+          </span>
+          ${d.is_gateway?'<span style="font-size:8px;color:var(--c)">🌐</span>':''}
+          ${conf > 0 ? `<span style="font-size:8px;color:var(--dim)">(${conf}%)</span>` : ''}
+        </div>
+        <div style="font-size:9px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+          ${d.hostname && d.hostname !== 'Unknown' ? d.hostname : (d.ip_address || 'Unknown')}
         </div>
         <div style="font-size:8px;color:var(--dim);font-family:'JetBrains Mono',monospace">
           ${d.ip_address||'--'} · ${d.mac_address||'--'}
@@ -3047,7 +4301,8 @@ function renderNetmapPanel(devices){
         border:1px solid ${d.status==='trusted'?'rgba(0,255,136,.2)':'rgba(255,51,102,.2)'}">
         ${(d.status||'?').toUpperCase()}
       </span>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ══════════════════════════════════════════════
@@ -3059,13 +4314,16 @@ async function loadGlobePanel(){
   const totalEl = document.getElementById('globe-total-attacks');
   const srcEl   = document.getElementById('globe-unique-src');
   const attacks = await apiFetch('/api/attacks/');
-  if(attacks){
-    const ext = attacks.filter(a=>a.source_ip&&!a.source_ip.startsWith('192.168')&&!a.source_ip.startsWith('10.'));
-    if(srcEl) srcEl.textContent = new Set(ext.map(a=>a.source_ip)).size;
-    // Update globe with real IPs
+  if(attacks && Array.isArray(attacks) && !attacks._error){
     state.attacks = attacks;
+    const ext = attacks.filter(a=>a.source_ip&&!a.source_ip.startsWith('192.168')&&!a.source_ip.startsWith('10.')&&!a.source_ip.startsWith('127.'));
+    if(srcEl) srcEl.textContent = new Set(ext.map(a=>a.source_ip)).size;
+    renderAttackSources(attacks);
+  } else {
+    if(srcEl) srcEl.textContent = '0';
+    renderAttackSources([]);
   }
-  if(stats && stats.length){
+  if(stats && Array.isArray(stats) && stats.length){
     let total=0; stats.forEach(s=>total+=s.count||0);
     if(totalEl) totalEl.textContent = total;
     if(typesEl){
@@ -3079,9 +4337,11 @@ async function loadGlobePanel(){
         </div>`;
       }).join('');
     }
-  } else if(typesEl){
-    typesEl.innerHTML = '<div style="font-size:9px;color:var(--g);padding:6px">✅ No attacks recorded</div>';
+  } else {
+    if(totalEl) totalEl.textContent = '0';
+    if(typesEl) typesEl.innerHTML = '<div style="font-size:9px;color:var(--g);padding:6px">✅ No attacks recorded</div>';
   }
+  startGlobeAnimation();
 }
 
 // ══════════════════════════════════════════════
@@ -3144,15 +4404,40 @@ async function loadReportsPanel(){
 // ══════════════════════════════════════════════
 // PATCH showPanel — trigger panel-specific loaders
 // ══════════════════════════════════════════════
+let meshPollTimer = null;
+let predPollTimer = null;
+
 const _origShowPanel = showPanel;
 showPanel = function(name, el){
   _origShowPanel(name, el);
+
+  if(meshPollTimer){ clearInterval(meshPollTimer); meshPollTimer = null; }
+  if(predPollTimer){ clearInterval(predPollTimer); predPollTimer = null; }
+
   if(name==='netmap')     { renderNetmapPanel(state.devices); startTopoMap(state.devices); }
   if(name==='devices')    { startTopoMap(state.devices); }
-  if(name==='mesh')       { fetchMeshTopology(); }
+  if(name==='mesh')       { 
+    fetchMeshTopology(); 
+    startTopoMap(state.devices); 
+    meshPollTimer = setInterval(fetchMeshTopology, 3000);
+  }
   if(name==='honeypot')   { fetchHoneypot(); }
-  if(name==='globe')      { loadGlobePanel(); }
-  if(name==='prediction') { loadAIStatus(); renderPredictions(state.predictions); startPredChart(); }
+  if(name==='traffic')    { fetchTrafficHistory(); fetchTrafficPackets(); }
+  if(name==='threats')    { fetchAttacks(); startGlobeAnimation(); }
+  if(name==='globe')      { loadGlobePanel(); startGlobeAnimation(); }
+  if(name==='prediction') { 
+    loadAIStatus(); 
+    fetchPredictions(); 
+    fetchAnomalies(); 
+    startRadarAnimation(); 
+    startPredChart(); 
+    predPollTimer = setInterval(() => {
+      fetchPredictions();
+      fetchAnomalies();
+      fetchForecastData();
+      loadAIStatus();
+    }, 2500);
+  }
   if(name==='reports')    { loadReportsPanel(); }
 };
 
@@ -3173,6 +4458,20 @@ let authState = {
   token:       localStorage.getItem('hs_token') || '',
   user:        null,
 };
+
+function authConsumeGoogleRedirect(){
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const token = params.get('google_token');
+  const error = params.get('google_error');
+  if(token){
+    authState.token = token;
+    localStorage.setItem('hs_token', token);
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+  } else if(error){
+    authShowMsg('login-msg', `Google Sign-In failed: ${error}`, 'error');
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
+}
 
 // Check if already logged in
 async function authCheckSession(){
@@ -3402,10 +4701,14 @@ async function authInitGoogle(){
     if(r?.client_id){
       window._GOOGLE_CLIENT_ID = r.client_id;
     } else {
-      window._GOOGLE_CLIENT_ID = '1002481182037-uqdbjff4ni25kjgcblacmon56q8gcdbe.apps.googleusercontent.com';
+      window._GOOGLE_CLIENT_ID = '';
+      authShowMsg('login-msg', r?.error || 'Google Sign-In is not configured on the server.', 'warning');
+      authShowMsg('reg-msg', r?.error || 'Google Sign-In is not configured on the server.', 'warning');
     }
   } catch(e){
-    window._GOOGLE_CLIENT_ID = '1002481182037-uqdbjff4ni25kjgcblacmon56q8gcdbe.apps.googleusercontent.com';
+    window._GOOGLE_CLIENT_ID = '';
+    authShowMsg('login-msg', 'Cannot load Google Sign-In configuration from the backend.', 'warning');
+    authShowMsg('reg-msg', 'Cannot load Google Sign-In configuration from the backend.', 'warning');
   }
 
   renderGoogleButtons();
@@ -3423,17 +4726,14 @@ async function authInitGoogle(){
 }
 
 function renderGoogleButtons(){
-  const clientId = window._GOOGLE_CLIENT_ID || '1002481182037-uqdbjff4ni25kjgcblacmon56q8gcdbe.apps.googleusercontent.com';
+  const clientId = window._GOOGLE_CLIENT_ID || '';
   if (!window.google?.accounts?.id || !clientId) return;
 
   try {
     window.google.accounts.id.initialize({
       client_id: clientId,
-      callback: (resp) => {
-        if (resp && resp.credential) {
-          handleGoogleAuthSuccess({ id_token: resp.credential });
-        }
-      },
+      login_uri: `${API}/api/auth/google/callback`,
+      ux_mode: 'redirect',
       auto_select: false,
       cancel_on_tap_outside: true
     });
@@ -3489,53 +4789,14 @@ async function handleGoogleAuthSuccess(payload){
 
 function authGoogleSignIn(){
   const msgId = authState.tab==='login' ? 'login-msg' : 'reg-msg';
-  const GOOGLE_CLIENT_ID = window._GOOGLE_CLIENT_ID || '1002481182037-uqdbjff4ni25kjgcblacmon56q8gcdbe.apps.googleusercontent.com';
+  const GOOGLE_CLIENT_ID = window._GOOGLE_CLIENT_ID || '';
 
   if(!GOOGLE_CLIENT_ID){
     authShowMsg(msgId, 'Google Client ID is not configured.', 'error');
     return;
   }
 
-  // 1. Direct GIS Token Client Popup (Safe user gesture, no iframe postMessage issues)
-  if (window.google?.accounts?.oauth2?.initTokenClient) {
-    try {
-      const tokenClient = window.google.accounts.oauth2.initTokenClient({
-        client_id: GOOGLE_CLIENT_ID,
-        scope: 'openid email profile',
-        callback: async (resp) => {
-          if (resp && resp.access_token) {
-            await handleGoogleAuthSuccess({ access_token: resp.access_token });
-          } else if (resp?.error) {
-            authShowMsg(msgId, `Google Sign-In: ${resp.error_description || resp.error}`, 'error');
-          }
-        },
-        error_callback: (err) => {
-          console.warn('GIS Token Client error:', err);
-          authShowMsg(msgId, 'Google Sign-In window closed or blocked by browser shields.', 'warning');
-        }
-      });
-      tokenClient.requestAccessToken({ prompt: 'select_account' });
-      return;
-    } catch(e){
-      console.warn('GIS initTokenClient exception:', e);
-    }
-  }
-
-  // 2. GIS One-Tap Prompt
-  if (window.google?.accounts?.id) {
-    try {
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: (resp) => {
-          if (resp?.credential) handleGoogleAuthSuccess({ id_token: resp.credential });
-        }
-      });
-      window.google.accounts.id.prompt();
-      return;
-    } catch(e){}
-  }
-
-  authShowMsg(msgId, 'Loading Google Sign-In services...', 'info');
+  authShowMsg(msgId, 'Use the Google button above to continue.', 'info');
 }
 
 
@@ -3559,13 +4820,592 @@ function authGoogleSignIn(){
   if(window.location.protocol === 'file:'){
     authShowMsg('login-msg', '⚠️ Opened via file://. Please start "run.bat" and navigate to http://127.0.0.1:5050 for Google Sign-In.', 'warning');
     authShowMsg('reg-msg', '⚠️ Opened via file://. Please start "run.bat" and navigate to http://127.0.0.1:5050 for Google Sign-In.', 'warning');
+  } else if(!['127.0.0.1', 'localhost'].includes(window.location.hostname)){
+    const originMessage = `Google Sign-In requires this origin to be authorized: ${window.location.origin}`;
+    authShowMsg('login-msg', originMessage, 'warning');
+    authShowMsg('reg-msg', originMessage, 'warning');
   }
-  const loggedIn = await authCheckSession();
-  if(!loggedIn){
-    authInitGoogle();
-  }
+  authConsumeGoogleRedirect();
+  const ok = await ensureAuthenticated();
+  if(!ok) authInitGoogle();
 })();
 
+
+
+// ══════════════════════════════════════════════
+// SYSTEM MONITOR & PROCESS MANAGEMENT LOGIC
+// ══════════════════════════════════════════════
+const smState = {
+  overviewTimer: null,
+  processTimer: null,
+  currentSort: 'cpu_percent',
+  sortOrder: 'desc',
+  processes: [],
+  searchQuery: '',
+  isAutoRefresh: true,
+  cpuHistory: [],
+  memHistory: [],
+  selectedProc: null,
+  killTarget: null
+};
+
+function initSysmonCharts() {
+  // Do not fill with artificial 0% values; wait for real backend telemetry history
+  if (!smState.cpuHistory) smState.cpuHistory = [];
+  if (!smState.memHistory) smState.memHistory = [];
+}
+
+function loadSysmonPanel() {
+  initSysmonCharts();
+  refreshSysmonAll();
+  startSysmonTimers();
+}
+
+function startSysmonTimers() {
+  stopSysmonTimers();
+  if (smState.isAutoRefresh) {
+    smState.overviewTimer = setInterval(fetchSysmonOverview, 2000);
+    smState.processTimer = setInterval(fetchSysmonProcesses, 2000);
+  }
+}
+
+function stopSysmonTimers() {
+  if (smState.overviewTimer) { clearInterval(smState.overviewTimer); smState.overviewTimer = null; }
+  if (smState.processTimer) { clearInterval(smState.processTimer); smState.processTimer = null; }
+}
+
+function toggleSysmonAutoRefresh(enabled) {
+  smState.isAutoRefresh = enabled;
+  if (enabled) {
+    startSysmonTimers();
+  } else {
+    stopSysmonTimers();
+  }
+}
+
+function refreshSysmonAll() {
+  fetchSysmonOverview();
+  fetchSysmonProcesses();
+}
+
+async function fetchSysmonOverview() {
+  try {
+    const data = await apiFetch('/api/sysmon/overview');
+    if (!data || data._error) return;
+
+    // CPU
+    const cpu = data.cpu || {};
+    const isInitializing = Boolean(cpu.initializing);
+    const isStale = Boolean(cpu.stale);
+    const cpuPct = (cpu.usage_percent !== undefined && cpu.usage_percent !== null) ? Number(cpu.usage_percent) : (cpu.percent !== undefined ? Number(cpu.percent) : null);
+    
+    const cpuEl = document.getElementById('sm-cpu-val');
+    const cpuBar = document.getElementById('sm-cpu-bar');
+    const cpuSub = document.getElementById('sm-cpu-sub');
+    const cpuFreq = document.getElementById('sm-cpu-freq');
+
+    if (isInitializing || cpuPct === null) {
+      if (cpuEl) cpuEl.textContent = 'Measuring...';
+      if (cpuBar) cpuBar.style.width = '0%';
+      if (cpuSub) cpuSub.textContent = `Cores: ${cpu.physical_cores || '-'}(${cpu.logical_cores || '-'}) | Initializing baseline...`;
+    } else {
+      if (cpuEl) cpuEl.textContent = cpuPct.toFixed(1) + '%';
+      if (cpuBar) cpuBar.style.width = Math.min(100, Math.max(0, cpuPct)) + '%';
+      const staleTag = isStale ? '<span style="color:var(--r);font-weight:bold;"> [Stale]</span>' : '';
+      if (cpuSub) cpuSub.innerHTML = `Cores: ${cpu.physical_cores || cpu.count_physical || '-'}(${cpu.logical_cores || cpu.count_logical || '-'}) | Load: ${cpuPct.toFixed(1)}%${staleTag}`;
+    }
+
+    if (cpuFreq) {
+      const freqVal = (cpu.frequency_current_ghz !== undefined && cpu.frequency_current_ghz !== null) ? cpu.frequency_current_ghz : cpu.frequency_ghz;
+      if (freqVal && Number(freqVal) > 0) {
+        cpuFreq.textContent = `${Number(freqVal).toFixed(2)} GHz`;
+      } else {
+        cpuFreq.textContent = 'N/A';
+      }
+    }
+
+    // CPU per core (Synchronized from the exact same 1-second sample)
+    const coreBars = document.getElementById('sm-core-bars');
+    const perCpu = cpu.per_cpu || cpu.per_cpu_percent;
+    if (coreBars && Array.isArray(perCpu)) {
+      coreBars.innerHTML = perCpu.map((p, idx) => {
+        const val = Number(p) || 0;
+        const barColor = val > 80 ? 'var(--r)' : val > 50 ? 'var(--y)' : 'var(--c)';
+        return `
+          <div class="sm-core-card">
+            <div style="display:flex;justify-content:space-between;font-size:8px;font-family:'JetBrains Mono',monospace;color:var(--dim);margin-bottom:2px;">
+              <span>Core ${idx}</span>
+              <span style="color:${barColor};font-weight:600;">${val.toFixed(0)}%</span>
+            </div>
+            <div class="sm-meter-bar"><div class="sm-meter-fill" style="width:${Math.min(100, val)}%;background:${barColor};"></div></div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Memory
+    const mem = data.memory || {};
+    const memPct = (mem.percent !== undefined ? mem.percent : mem.ram_percent) || 0;
+    const memUsed = (mem.used_gb !== undefined ? mem.used_gb : mem.ram_used_gb) || 0;
+    const memTotal = (mem.total_gb !== undefined ? mem.total_gb : mem.ram_total_gb) || 0;
+    const memAvail = (mem.available_gb !== undefined ? mem.available_gb : mem.ram_available_gb) || 0;
+    const memEl = document.getElementById('sm-mem-val');
+    const memBar = document.getElementById('sm-mem-bar');
+    const memSub = document.getElementById('sm-mem-sub');
+    const memCached = document.getElementById('sm-mem-cached');
+    if (memEl) memEl.textContent = memPct.toFixed(1) + '%';
+    if (memBar) memBar.style.width = Math.min(100, Math.max(0, memPct)) + '%';
+    if (memSub) memSub.textContent = `${memUsed.toFixed(1)} / ${memTotal.toFixed(1)} GB`;
+    if (memCached) memCached.textContent = `Avail: ${memAvail.toFixed(1)} GB | Cached: ${(mem.cached_gb || 0).toFixed(1)} GB`;
+
+    // Disk
+    const disk = data.disk || {};
+    const diskPct = (disk.percent !== undefined ? disk.percent : disk.total_percent) || 0;
+    const diskUsed = (disk.used_gb !== undefined ? disk.used_gb : disk.total_used_gb) || 0;
+    const diskTotal = (disk.total_gb !== undefined ? disk.total_gb : disk.total_size_gb) || 0;
+    const diskIo = document.getElementById('sm-disk-io');
+    const diskBar = document.getElementById('sm-disk-bar');
+    const diskSub = document.getElementById('sm-disk-sub');
+    if (diskIo) diskIo.textContent = `R: ${(disk.read_mb_s || 0).toFixed(1)} | W: ${(disk.write_mb_s || 0).toFixed(1)} MB/s`;
+    if (diskBar) diskBar.style.width = Math.min(100, Math.max(0, diskPct)) + '%';
+    if (diskSub) diskSub.textContent = `Used: ${diskUsed.toFixed(0)} / ${diskTotal.toFixed(0)} GB (${diskPct.toFixed(0)}%)`;
+
+    // Partitions
+    const partDiv = document.getElementById('sm-disk-partitions');
+    if (partDiv && Array.isArray(disk.partitions)) {
+      partDiv.innerHTML = disk.partitions.map(p => {
+        const val = Number(p.percent) || 0;
+        const freeGB = p.free_gb !== undefined ? p.free_gb : (p.total_gb - p.used_gb);
+        const barColor = val > 90 ? 'var(--r)' : val > 75 ? 'var(--y)' : 'var(--c)';
+        return `
+          <div style="background:rgba(255,255,255,.02);border:1px solid rgba(0,245,255,.08);border-radius:6px;padding:6px 10px;">
+            <div style="display:flex;justify-content:space-between;font-size:9px;font-family:'JetBrains Mono',monospace;margin-bottom:3px;">
+              <span style="color:var(--text);font-weight:600;">${p.device} [${p.mountpoint}] (${p.fstype || ''})</span>
+              <span style="color:${barColor};">${val.toFixed(0)}% (${(freeGB || 0).toFixed(1)} GB free)</span>
+            </div>
+            <div class="sm-meter-bar"><div class="sm-meter-fill" style="width:${Math.min(100, val)}%;background:${barColor};"></div></div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Network
+    const net = data.network || {};
+    const netIo = document.getElementById('sm-net-io');
+    const netBar = document.getElementById('sm-net-bar');
+    const netSub = document.getElementById('sm-net-sub');
+    if (netIo) netIo.textContent = `↓ ${(net.download_mb_s || 0).toFixed(2)} | ↑ ${(net.upload_mb_s || 0).toFixed(2)} MB/s`;
+    if (netBar) {
+      const netActivity = Math.min(100, ((net.download_mb_s || 0) + (net.upload_mb_s || 0)) * 10);
+      netBar.style.width = netActivity + '%';
+    }
+    const pktsRecv = net.packets_recv_per_sec !== undefined ? net.packets_recv_per_sec : net.packets_recv;
+    const pktsSent = net.packets_sent_per_sec !== undefined ? net.packets_sent_per_sec : net.packets_sent;
+    const conns = net.active_connections !== undefined ? net.active_connections : (net.connection_count || 0);
+    if (netSub) netSub.textContent = `Packets: ${pktsRecv || 0} ↓ ${pktsSent || 0} ↑ | Conns: ${conns}`;
+
+    // System Info
+    const sys = data.system || {};
+    const hostEl = document.getElementById('sm-host-name');
+    const osEl = document.getElementById('sm-host-os');
+    const uptimeEl = document.getElementById('sm-host-uptime');
+    const bootEl = document.getElementById('sm-host-boot');
+    const pyEl = document.getElementById('sm-host-python');
+    if (hostEl) hostEl.textContent = sys.hostname || '-';
+    if (osEl) osEl.textContent = `${sys.os || ''}`;
+    if (uptimeEl) uptimeEl.textContent = sys.uptime || sys.uptime_formatted || '-';
+    if (bootEl) bootEl.textContent = (sys.boot_time || '').split('T')[0] || '-';
+    if (pyEl) pyEl.textContent = `${sys.platform || ''} / Py ${sys.python_version || ''}`;
+
+    // Synchronize telemetry history buffers from the centralized backend sampler
+    if (Array.isArray(cpu.history) && cpu.history.length > 0) {
+      smState.cpuHistory = cpu.history.map(h => typeof h === 'object' && h !== null ? Number(h.value) : Number(h));
+    } else if (cpuPct !== null) {
+      smState.cpuHistory.push(cpuPct);
+      if (smState.cpuHistory.length > 60) smState.cpuHistory.shift();
+    }
+
+    if (Array.isArray(mem.history) && mem.history.length > 0) {
+      smState.memHistory = mem.history.map(h => typeof h === 'object' && h !== null ? Number(h.value) : Number(h));
+    } else {
+      smState.memHistory.push(memPct);
+      if (smState.memHistory.length > 60) smState.memHistory.shift();
+    }
+
+    drawSysmonCpuChart();
+    drawSysmonMemChart();
+
+  } catch(e) {
+    console.error('Sysmon overview fetch error:', e);
+  }
+}
+
+async function fetchSysmonProcesses() {
+  try {
+    const sortParam = smState.currentSort === 'memory_mb' ? 'memory' : smState.currentSort === 'cpu_percent' ? 'cpu' : smState.currentSort;
+    const url = `/api/sysmon/processes?sort_by=${sortParam}&order=${smState.sortOrder}&limit=120&search=${encodeURIComponent(smState.searchQuery)}`;
+    const data = await apiFetch(url);
+    if (!data || data._error) return;
+
+    smState.processes = Array.isArray(data) ? data : (data.processes || []);
+    const totalCount = Array.isArray(data) ? data.length : (data.total_count || smState.processes.length);
+    renderSysmonProcesses(smState.processes, totalCount);
+  } catch(e) {
+    console.error('Sysmon processes fetch error:', e);
+  }
+}
+
+function renderSysmonProcesses(list, totalCount) {
+  const tbody = document.getElementById('sm-proc-tbody');
+  const countEl = document.getElementById('sm-proc-count');
+  if (countEl) countEl.textContent = `${list.length} / ${totalCount}`;
+
+  if (!tbody) return;
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--dim);">No matching processes found</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(p => {
+    const isProtected = p.is_protected;
+    let statusClass = 'sm-badge-sleeping';
+    if (p.status === 'running') statusClass = 'sm-badge-running';
+    else if (p.status === 'stopped' || p.status === 'dead') statusClass = 'sm-badge-stopped';
+
+    const cpuColor = p.cpu_percent > 50 ? 'var(--r)' : p.cpu_percent > 15 ? 'var(--y)' : 'var(--c)';
+    const memMB = (p.memory_mb || 0).toFixed(1);
+
+    const killBtn = isProtected
+      ? `<span class="sm-badge sm-badge-protected" title="Protected Windows System Process">🔒 System</span>`
+      : `<button class="btn btn-r" style="padding:2px 8px;font-size:9px;" onclick="openKillModal(${p.pid}, '${escapeHtml(p.name)}')">End Task</button>`;
+
+    return `
+      <tr>
+        <td style="color:var(--c);font-weight:600;">${p.pid}</td>
+        <td style="font-weight:600;color:#fff;" title="${escapeHtml(p.exe || p.exe_path || p.name)}">${escapeHtml(p.name)}</td>
+        <td style="color:var(--dim);">${escapeHtml(p.username || 'SYSTEM')}</td>
+        <td><span class="sm-badge ${statusClass}">${p.status}</span></td>
+        <td style="color:${cpuColor};font-weight:600;">${(p.cpu_percent || 0).toFixed(1)}%</td>
+        <td>${memMB} MB <span style="font-size:8px;color:var(--dim);">(${(p.memory_percent || 0).toFixed(1)}%)</span></td>
+        <td style="color:var(--dim);">${p.num_threads || 1}</td>
+        <td style="text-align:right;">
+          <button class="btn" style="padding:2px 8px;font-size:9px;margin-right:4px;" onclick="openProcDetails(${p.pid})">Details</button>
+          ${killBtn}
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+function handleSysmonSearch(query) {
+  smState.searchQuery = (query || '').trim();
+  fetchSysmonProcesses();
+}
+
+function sortSysmonBy(col) {
+  if (smState.currentSort === col) {
+    smState.sortOrder = smState.sortOrder === 'asc' ? 'desc' : 'asc';
+  } else {
+    smState.currentSort = col;
+    smState.sortOrder = 'desc';
+  }
+
+  // Update sort indicators
+  ['pid', 'name', 'username', 'status', 'cpu_percent', 'memory_mb', 'num_threads'].forEach(c => {
+    const el = document.getElementById('sm-sort-' + c);
+    if (el) el.textContent = c === smState.currentSort ? (smState.sortOrder === 'asc' ? '▲' : '▼') : '';
+  });
+
+  fetchSysmonProcesses();
+}
+
+function drawSysmonCpuChart() {
+  const canvas = document.getElementById('sm-cpu-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = canvas.parentElement.clientWidth - 32;
+  const H = canvas.height = 130;
+  const data = smState.cpuHistory;
+  if (!data || data.length === 0) return;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(0, 245, 255, 0.07)';
+  ctx.lineWidth = 1;
+  for (let y = 0; y <= H; y += H / 4) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // Path
+  ctx.beginPath();
+  const step = W / (data.length - 1);
+  data.forEach((val, i) => {
+    const x = i * step;
+    const y = H - (val / 100) * (H - 10) - 5;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+
+  // Stroke
+  ctx.strokeStyle = '#00f5ff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Gradient Fill
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, 'rgba(0, 245, 255, 0.3)');
+  grad.addColorStop(1, 'rgba(0, 245, 255, 0.0)');
+  ctx.lineTo(W, H);
+  ctx.lineTo(0, H);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Watermark text
+  const lastVal = data[data.length - 1] || 0;
+  ctx.font = '10px JetBrains Mono';
+  ctx.fillStyle = 'rgba(0, 245, 255, 0.6)';
+  ctx.textAlign = 'right';
+  ctx.fillText(`Current: ${lastVal.toFixed(1)}%`, W - 8, 16);
+}
+
+function drawSysmonMemChart() {
+  const canvas = document.getElementById('sm-mem-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = canvas.parentElement.clientWidth - 32;
+  const H = canvas.height = 130;
+  const data = smState.memHistory;
+  if (!data || data.length === 0) return;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(0, 255, 136, 0.07)';
+  ctx.lineWidth = 1;
+  for (let y = 0; y <= H; y += H / 4) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // Path
+  ctx.beginPath();
+  const step = W / (data.length - 1);
+  data.forEach((val, i) => {
+    const x = i * step;
+    const y = H - (val / 100) * (H - 10) - 5;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+
+  // Stroke
+  ctx.strokeStyle = '#00ff88';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Gradient Fill
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, 'rgba(0, 255, 136, 0.3)');
+  grad.addColorStop(1, 'rgba(0, 255, 136, 0.0)');
+  ctx.lineTo(W, H);
+  ctx.lineTo(0, H);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Watermark text
+  const lastVal = data[data.length - 1] || 0;
+  ctx.font = '10px JetBrains Mono';
+  ctx.fillStyle = 'rgba(0, 255, 136, 0.6)';
+  ctx.textAlign = 'right';
+  ctx.fillText(`Current: ${lastVal.toFixed(1)}%`, W - 8, 16);
+}
+
+// ── PROCESS DETAILS MODAL ──
+async function openProcDetails(pid) {
+  const modal = document.getElementById('sm-details-modal');
+  const body = document.getElementById('sm-modal-body');
+  const title = document.getElementById('sm-modal-title');
+  const killBtn = document.getElementById('sm-modal-kill-btn');
+  if (!modal || !body) return;
+
+  modal.classList.remove('hidden');
+  body.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading telemetry for PID ${pid}...</div>`;
+
+  try {
+    const data = await apiFetch(`/api/sysmon/process/${pid}`);
+    if (!data || data._error) {
+      body.innerHTML = `<div class="error-state">Error: ${data?.message || 'Failed to inspect process'}</div>`;
+      if (killBtn) killBtn.style.display = 'none';
+      return;
+    }
+
+    const p = data.process || data;
+    smState.selectedProc = p;
+    if (title) title.textContent = `🔍 PROCESS: ${escapeHtml(p.name)} [PID: ${p.pid}]`;
+
+    if (killBtn) {
+      if (p.is_protected) {
+        killBtn.style.display = 'none';
+      } else {
+        killBtn.style.display = 'inline-block';
+      }
+    }
+
+    body.innerHTML = `
+      <div class="sm-info-kv">
+        <span class="sm-info-k">Process Name:</span><span class="sm-info-v" style="font-weight:600;color:var(--c);">${escapeHtml(p.name)}</span>
+        <span class="sm-info-k">PID:</span><span class="sm-info-v">${p.pid}</span>
+        <span class="sm-info-k">User / Account:</span><span class="sm-info-v">${escapeHtml(p.username || 'N/A')}</span>
+        <span class="sm-info-k">Status:</span><span class="sm-info-v">${p.status}</span>
+        <span class="sm-info-k">CPU Usage:</span><span class="sm-info-v" style="color:var(--c);font-weight:600;">${(p.cpu_percent || 0).toFixed(1)}%</span>
+        <span class="sm-info-k">Memory (RSS):</span><span class="sm-info-v">${(p.memory_rss_mb || 0).toFixed(1)} MB (${(p.memory_percent || 0).toFixed(1)}%)</span>
+        <span class="sm-info-k">Virtual Memory (VMS):</span><span class="sm-info-v">${(p.memory_vms_mb || 0).toFixed(1)} MB</span>
+        <span class="sm-info-k">Executable Path:</span><span class="sm-info-v">${escapeHtml(p.exe || p.exe_path || 'N/A')}</span>
+        <span class="sm-info-k">Working Directory:</span><span class="sm-info-v">${escapeHtml(p.cwd || 'N/A')}</span>
+        <span class="sm-info-k">Command Line:</span><span class="sm-info-v" style="font-size:10px;color:var(--dim);">${escapeHtml(p.cmdline || 'N/A')}</span>
+        <span class="sm-info-k">Threads:</span><span class="sm-info-v">${p.num_threads || 1} threads</span>
+        <span class="sm-info-k">Created:</span><span class="sm-info-v">${p.create_time || 'N/A'}</span>
+      </div>
+    `;
+
+  } catch(e) {
+    body.innerHTML = `<div class="error-state">Failed to load process details: ${e.message}</div>`;
+  }
+}
+
+function closeSmDetailsModal() {
+  const modal = document.getElementById('sm-details-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function triggerKillFromModal() {
+  if (smState.selectedProc) {
+    const p = smState.selectedProc;
+    closeSmDetailsModal();
+    openKillModal(p.pid, p.name);
+  }
+}
+
+// ── KILL CONFIRMATION MODAL ──
+function openKillModal(pid, name) {
+  smState.killTarget = { pid, name };
+  const modal = document.getElementById('sm-kill-modal');
+  const msg = document.getElementById('sm-kill-msg');
+  const alert = document.getElementById('sm-kill-alert');
+  const confirmBtn = document.getElementById('sm-kill-confirm-btn');
+
+  if (alert) alert.style.display = 'none';
+  if (confirmBtn) {
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = 'Confirm Termination';
+  }
+
+  if (msg) {
+    msg.innerHTML = `Are you sure you want to terminate process <strong style="color:var(--c);">${escapeHtml(name)}</strong> (<strong style="color:var(--r);">PID: ${pid}</strong>)?<br><br><span style="color:var(--dim);font-size:10px;">Warning: Terminating a process may cause unsaved data loss or unexpected application behavior. This action will be recorded in the security audit log.</span>`;
+  }
+
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeSmKillModal() {
+  const modal = document.getElementById('sm-kill-modal');
+  if (modal) modal.classList.add('hidden');
+  smState.killTarget = null;
+}
+
+async function confirmExecuteKill() {
+  if (!smState.killTarget) return;
+  const { pid, name } = smState.killTarget;
+  const alert = document.getElementById('sm-kill-alert');
+  const confirmBtn = document.getElementById('sm-kill-confirm-btn');
+
+  if (confirmBtn) {
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Terminating...';
+  }
+
+  try {
+    const res = await apiPost(`/api/sysmon/process/${pid}/kill`, {});
+    if (res && res.success) {
+      if (alert) {
+        alert.style.display = 'block';
+        alert.style.background = 'rgba(0,255,136,.12)';
+        alert.style.border = '1px solid rgba(0,255,136,.3)';
+        alert.style.color = 'var(--g)';
+        alert.textContent = `✓ Success: Process ${name} (PID: ${pid}) has been terminated.`;
+      }
+      setTimeout(() => {
+        closeSmKillModal();
+        refreshSysmonAll();
+      }, 1000);
+    } else {
+      if (alert) {
+        alert.style.display = 'block';
+        alert.style.background = 'rgba(255,51,102,.12)';
+        alert.style.border = '1px solid rgba(255,51,102,.3)';
+        alert.style.color = 'var(--r)';
+        alert.textContent = `✕ Failed: ${res?.error || 'Unable to terminate process.'}`;
+      }
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Retry Termination';
+      }
+    }
+  } catch(e) {
+    if (alert) {
+      alert.style.display = 'block';
+      alert.style.background = 'rgba(255,51,102,.12)';
+      alert.style.border = '1px solid rgba(255,51,102,.3)';
+      alert.style.color = 'var(--r)';
+      alert.textContent = `✕ Error: ${e.message}`;
+    }
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Confirm Termination';
+    }
+  }
+}
+
 </script>
+
+<!-- SYSTEM MONITOR PROCESS DETAILS MODAL -->
+<div id="sm-details-modal" class="sm-modal-overlay hidden" onclick="if(event.target===this) closeSmDetailsModal()">
+  <div class="sm-modal-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:10px;">
+      <div style="font-family:'Orbitron',sans-serif;font-size:13px;color:var(--c);letter-spacing:2px;" id="sm-modal-title">🔍 PROCESS DETAILS</div>
+      <button class="btn" style="padding:4px 10px;font-size:11px;" onclick="closeSmDetailsModal()">✕</button>
+    </div>
+    <div id="sm-modal-body">
+      <div class="loading-state"><div class="spinner"></div>Loading detailed telemetry...</div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">
+      <button class="btn" onclick="closeSmDetailsModal()">Close</button>
+      <button class="btn btn-r" id="sm-modal-kill-btn" onclick="triggerKillFromModal()">End Process</button>
+    </div>
+  </div>
+</div>
+
+<!-- SYSTEM MONITOR KILL CONFIRMATION MODAL -->
+<div id="sm-kill-modal" class="sm-modal-overlay hidden" onclick="if(event.target===this) closeSmKillModal()">
+  <div class="sm-modal-card" style="max-width:480px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <div style="font-size:22px;">⚠️</div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:13px;color:var(--r);letter-spacing:2px;">TERMINATE PROCESS</div>
+    </div>
+    <div style="font-size:11px;color:var(--text);font-family:'JetBrains Mono',monospace;line-height:1.6;margin-bottom:14px;" id="sm-kill-msg">
+      Are you sure you want to terminate this process?
+    </div>
+    <div id="sm-kill-alert" style="display:none;padding:8px 12px;border-radius:6px;font-size:10px;font-family:'JetBrains Mono',monospace;margin-bottom:14px;"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;">
+      <button class="btn" id="sm-kill-cancel-btn" onclick="closeSmKillModal()">Cancel</button>
+      <button class="btn btn-r" id="sm-kill-confirm-btn" onclick="confirmExecuteKill()">Confirm Termination</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

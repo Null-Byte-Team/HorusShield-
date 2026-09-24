@@ -1,46 +1,68 @@
+"""Generate the main HorusShield security posture report.
+
+This module formats telemetry already collected by HorusShield. It does not
+start scans or create synthetic security findings for presentation.
 """
-HorusShield Report Generator
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Full detailed PDF security audit with:
-- Executive summary with risk level
-- Security score breakdown
-- Attack timeline table
-- Device inventory
-- Honeypot events
-- Recommendations
-- SECURED BY HORUSSHIELD seal
-"""
+
 import os
+import re
+from collections import Counter
+from datetime import datetime, timedelta
+
 from fpdf import FPDF
-from datetime import datetime
+
+from config import active_config as config
 from database.db_manager import db
 from utils.helpers import pdf_safe_text
 from utils.logger import get_logger
-from config import active_config as config
 
 logger = get_logger("report_generator", "report")
 
 SEV_COLORS = {
-    'critical': (220, 30, 60),
-    'high':     (255, 107, 53),
-    'medium':   (255, 193, 7),
-    'low':      (0, 200, 100),
+    "critical": (220, 30, 60),
+    "high": (220, 90, 35),
+    "medium": (190, 130, 0),
+    "low": (0, 145, 90),
+    "info": (0, 120, 180),
 }
+NAVY = (5, 8, 20)
+INK = (25, 30, 42)
+MUTED = (90, 100, 116)
+PALE = (242, 245, 249)
+PERIOD_HOURS = 24
+
+
+def _text(value, fallback="Data unavailable"):
+    if value is None or value == "":
+        return fallback
+    return str(value)
+
+
+def _number(value, digits=0):
+    if value is None:
+        return "Data unavailable"
+    try:
+        return f"{float(value):,.{digits}f}"
+    except (TypeError, ValueError):
+        return _text(value)
+
+
+def _severity(value):
+    value = str(value or "info").lower()
+    return value if value in SEV_COLORS else "info"
+
 
 class HorusPDF(FPDF):
-    def __init__(self, facility_name="Facility", language="en"):
-        super().__init__()
-        self.facility = facility_name
-        self.lang = language
-        self.set_auto_page_break(auto=True, margin=18)
-        self.set_margins(18, 18, 18)
+    """Compact report canvas with a restrained HorusShield visual system."""
 
-    # Override once, here, instead of wrapping every individual .cell()/
-    # .multi_cell() call throughout this file. Report content includes
-    # network-derived data an attacker can influence directly — device
-    # hostnames, honeypot-captured usernames, attack-type strings — so any
-    # single unexpected Unicode character must not be able to abort the
-    # whole report (see utils.helpers.pdf_safe_text for why).
+    def __init__(self, report_id, facility_name="Facility"):
+        super().__init__()
+        self.report_id = report_id
+        self.facility = facility_name
+        self.generated = datetime.now().strftime("%Y-%m-%d %H:%M UTC")
+        self.set_auto_page_break(auto=True, margin=18)
+        self.set_margins(16, 25, 16)
+
     def cell(self, w=0, h=0, text="", *args, **kwargs):
         return super().cell(w, h, pdf_safe_text(text), *args, **kwargs)
 
@@ -48,64 +70,108 @@ class HorusPDF(FPDF):
         return super().multi_cell(w, h, pdf_safe_text(text), *args, **kwargs)
 
     def header(self):
-        self.set_fill_color(5, 8, 20)
-        self.rect(0, 0, 210, 20, 'F')
-        self.set_text_color(0, 245, 255)
-        self.set_font("Arial", "B", 10)
-        self.set_y(6)
-        self.cell(0, 8, "HORUSSHIELD 2.0 - SECURITY AUDIT REPORT", align="C")
-        self.set_text_color(100, 100, 120)
-        self.set_font("Arial", "", 7)
-        self.ln(2)
-        self.cell(0, 4, f"Team NullByte · WE School · Alexandria, Egypt  |  {self.facility}  |  {datetime.now().strftime('%Y-%m-%d %H:%M UTC')}", align="C")
-        self.ln(8)
-        self.set_text_color(20, 20, 30)
+        if self.page_no() == 1:
+            return
+        self.set_fill_color(*NAVY)
+        self.rect(0, 0, 210, 16, "F")
+        self.set_text_color(0, 210, 225)
+        self.set_font("Helvetica", "B", 8)
+        self.set_y(5)
+        self.cell(110, 5, "HORUSSHIELD 2.0  |  CYBERSECURITY OPERATIONS", align="L")
+        self.set_text_color(130, 145, 165)
+        self.set_font("Helvetica", "", 7)
+        self.cell(68, 5, self.generated, align="R")
+        self.set_text_color(*INK)
 
     def footer(self):
-        self.set_y(-14)
-        self.set_fill_color(5, 8, 20)
-        self.rect(0, self.get_y(), 210, 20, 'F')
-        self.set_text_color(0, 128, 160)
-        self.set_font("Arial", "I", 7)
-        self.cell(0, 6, f"SECURED BY HORUSSHIELD 2.0  |  Page {self.page_no()}  |  Confidential - Internal Use Only", align="C")
-        self.set_text_color(20, 20, 30)
+        self.set_y(-13)
+        self.set_draw_color(210, 216, 224)
+        self.line(16, self.get_y(), 194, self.get_y())
+        self.set_text_color(*MUTED)
+        self.set_font("Helvetica", "", 7)
+        self.set_x(16)
+        self.cell(0, 7, f"HORUSSHIELD 2.0  |  {self.report_id}  |  Page {self.page_no()}  |  {self.generated}", align="C")
+        self.set_text_color(*INK)
 
-    def section_title(self, text, num):
-        self.ln(4)
-        self.set_fill_color(5, 8, 20)
-        self.set_text_color(0, 245, 255)
-        self.set_font("Arial", "B", 12)
-        self.cell(0, 10, pdf_safe_text(f"  {num}. {text.upper()}"), fill=True, ln=True)
-        self.set_text_color(20, 20, 30)
+    def report_title(self, text, subtitle=None):
+        self.ln(2)
+        self.set_fill_color(*NAVY)
+        self.set_text_color(0, 210, 225)
+        self.set_font("Helvetica", "B", 13)
+        self.cell(0, 9, f"  {text.upper()}", fill=True, ln=True)
+        if subtitle:
+            self.set_text_color(*MUTED)
+            self.set_font("Helvetica", "", 8)
+            self.cell(0, 6, subtitle, ln=True)
+        self.set_text_color(*INK)
         self.ln(2)
 
-    def kv_row(self, label, value, color=None):
-        self.set_font("Arial", "B", 9)
-        self.set_fill_color(240, 242, 248)
-        self.cell(70, 7, pdf_safe_text(f"  {label}"), fill=True, border="LTB")
-        self.set_font("Arial", "", 9)
-        self.set_fill_color(252, 252, 255)
+    def section(self, text):
+        self.set_fill_color(225, 231, 238)
+        self.set_text_color(*NAVY)
+        self.set_font("Helvetica", "B", 10)
+        self.cell(0, 7, f"  {text.upper()}", fill=True, ln=True)
+        self.set_text_color(*INK)
+        self.ln(1)
+
+    def note(self, text, color=MUTED):
+        self.set_text_color(*color)
+        self.set_font("Helvetica", "I", 8)
+        self.set_x(16)
+        self.multi_cell(0, 5, text)
+        self.set_text_color(*INK)
+
+    def kv(self, label, value, color=None):
+        self.set_fill_color(*PALE)
+        self.set_font("Helvetica", "B", 8)
+        self.cell(55, 7, f"  {label}", fill=True, border="LTB")
+        self.set_font("Helvetica", "", 8)
         if color:
             self.set_text_color(*color)
-        self.cell(0, 7, pdf_safe_text(f"  {value}"), fill=True, border="RTB", ln=True)
-        self.set_text_color(20, 20, 30)
+        self.cell(0, 7, f"  {_text(value)}", fill=True, border="RTB", ln=True)
+        self.set_text_color(*INK)
 
-    def colored_bar(self, label, pct):
-        pct = min(int(pct or 0), 100)
-        color = (0,200,100) if pct>=80 else (255,193,7) if pct>=60 else (220,30,60)
-        self.set_font("Arial", "", 8)
-        self.cell(60, 5, pdf_safe_text(f"  {label}"))
-        self.set_fill_color(220, 220, 230)
-        self.cell(110, 5, "", fill=True)
-        # Draw filled portion over it
-        x = self.get_x() - 110 + (110*pct//100)
-        y = self.get_y()
-        self.set_fill_color(*color)
-        self.rect(self.get_x()-110, y, 110*pct//100, 5, 'F')
-        self.set_text_color(*color)
-        self.set_font("Arial","B",7)
-        self.cell(20, 5, f"{pct}%", ln=True)
-        self.set_text_color(20,20,30)
+    def table(self, headers, rows, widths):
+        self.set_fill_color(*NAVY)
+        self.set_text_color(0, 210, 225)
+        self.set_font("Helvetica", "B", 7)
+        for width, header in zip(widths, headers):
+            self.cell(width, 7, header, fill=True, border=1)
+        self.ln()
+        self.set_text_color(*INK)
+        self.set_font("Helvetica", "", 7)
+        for row in rows:
+            if self.get_y() > 260:
+                self.add_page()
+                self.set_fill_color(*NAVY)
+                self.set_text_color(0, 210, 225)
+                self.set_font("Helvetica", "B", 7)
+                for width, header in zip(widths, headers):
+                    self.cell(width, 7, header, fill=True, border=1)
+                self.ln()
+                self.set_text_color(*INK)
+                self.set_font("Helvetica", "", 7)
+            for width, value in zip(widths, row):
+                self.set_fill_color(250, 251, 253)
+                self.cell(width, 6, _text(value, "-"), fill=True, border=1)
+            self.ln()
+
+    def metric_grid(self, metrics):
+        width = 44.5
+        for index, (label, value, color) in enumerate(metrics):
+            self.set_fill_color(*PALE)
+            self.set_text_color(*MUTED)
+            self.set_font("Helvetica", "B", 7)
+            self.cell(width, 6, label.upper(), fill=True, border="LTR")
+            self.ln()
+            self.set_text_color(*(color or NAVY))
+            self.set_font("Helvetica", "B", 14)
+            self.cell(width, 10, _text(value), fill=True, border="LBR")
+            if index % 4 == 3:
+                self.ln(2)
+        if len(metrics) % 4:
+            self.ln(2)
+        self.set_text_color(*INK)
 
 
 class ReportGenerator:
@@ -114,267 +180,310 @@ class ReportGenerator:
         os.makedirs(self.output_dir, exist_ok=True)
 
     def generate_daily_report(self, facility_name="Facility", language="en"):
-        ts       = datetime.now().strftime('%Y%m%d_%H%M%S')
-        filename = f"HorusReport_{facility_name.replace(' ','_')}_{ts}.pdf"
+        now = datetime.utcnow()
+        period_start = now - timedelta(hours=PERIOD_HOURS)
+        report_id = f"HS-{now.strftime('%Y%m%d-%H%M%S')}"
+        safe_facility = re.sub(r"[^A-Za-z0-9 _-]", "", str(facility_name or "Facility")).strip() or "Facility"
+        filename = f"HorusPosture_{re.sub(r'[^A-Za-z0-9_-]', '_', safe_facility)}_{now.strftime('%Y%m%d_%H%M%S')}.pdf"
         filepath = os.path.join(self.output_dir, filename)
         try:
-            stats   = db.get_dashboard_stats()
-            attacks = db.get_attacks(limit=30)
-            devices = db.get_all_devices()
-            alerts  = db.get_alerts(limit=20)
-            try:
-                hp_status = db.get_honeypot_stats()
-            except Exception as e:
-                logger.debug(f"Honeypot stats unavailable for report: {e}")
-                hp_status = {}
-            try:
-                hp_events = db.get_honeypot_events(limit=10)
-            except Exception as e:
-                logger.debug(f"Honeypot events unavailable for report: {e}")
-                hp_events = []
-
-            score     = stats.get('security_score', 85)
-            devs      = stats.get('devices', {})
-            a_attacks = stats.get('active_attacks', 0)
-            u_alerts  = stats.get('unacknowledged_alerts', 0)
-            level     = "SECURE" if score>=90 else "MODERATE RISK" if score>=70 else "AT RISK" if score>=40 else "CRITICAL"
-            sev_color = SEV_COLORS.get('low') if score>=90 else SEV_COLORS.get('medium') if score>=70 else SEV_COLORS.get('high') if score>=40 else SEV_COLORS.get('critical')
-
-            pdf = HorusPDF(facility_name=facility_name, language=language)
-            pdf.add_page()
-
-            # ── Cover intro ──
-            pdf.set_font("Arial","B",22)
-            pdf.set_text_color(*sev_color)
-            pdf.cell(0,14,f"Security Score: {score}/100",ln=True,align="C")
-            pdf.set_text_color(100,100,120)
-            pdf.set_font("Arial","",12)
-            pdf.cell(0,8,f"Network Status: {level}",ln=True,align="C")
-            pdf.ln(4)
-
-            # ── 1. Executive Summary ──
-            pdf.section_title("Executive Summary", 1)
-            pdf.kv_row("Facility / Company", facility_name)
-            pdf.kv_row("Report Date", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-            pdf.kv_row("Security Score", f"{score}/100  -  {level}", sev_color)
-            pdf.kv_row("Active Attacks", str(a_attacks), SEV_COLORS['critical'] if a_attacks>0 else None)
-            pdf.kv_row("Unread Alerts", str(u_alerts))
-            pdf.kv_row("Total Devices", str(devs.get('total',0)))
-            pdf.kv_row("Unknown Devices", str(devs.get('unknown',0)), SEV_COLORS['high'] if devs.get('unknown',0)>0 else None)
-            pdf.kv_row("Trusted Devices", str(devs.get('trusted',0)))
-            pdf.kv_row("Blocked Devices", str(devs.get('blocked',0)))
-            pdf.ln(4)
-
-            # ── 2. Score Breakdown ──
-            pdf.section_title("Security Score Breakdown", 2)
-            comps = stats.get('components') or {
-                'Device Security':  round(score*0.90),
-                'Network Health':   round(score*0.85),
-                'Attack History':   round(score*0.95),
-                'AI Confidence':    round(score*0.80),
-                'Honeypot Defense': round(score*0.75),
-            }
-            for name, val in comps.items():
-                pdf.colored_bar(name, val)
-                pdf.ln(2)
-            pdf.ln(4)
-
-            # ── 3. Risk Assessment ──
-            pdf.section_title("Risk Assessment & Recommendations", 3)
-            recs = self._build_recommendations(score, devs, a_attacks, attacks)
-            for i, rec in enumerate(recs, 1):
-                pdf.set_font("Arial","B",9)
-                pdf.cell(0,7,f"  [{i}] {rec['title']}",ln=True)
-                pdf.set_font("Arial","",8)
-                pdf.set_text_color(80,80,100)
-                pdf.multi_cell(0,5,f"      {rec['detail']}")
-                pdf.set_text_color(20,20,30)
-                pdf.ln(1)
-            pdf.ln(4)
-
-            # ── 4. Attack Incidents ──
-            pdf.section_title("Security Incidents (Last 24h)", 4)
-            if not attacks:
-                pdf.set_font("Arial","I",9)
-                pdf.set_text_color(0,160,80)
-                pdf.cell(0,8,"  No attacks recorded in the last 24 hours. ✓",ln=True)
-                pdf.set_text_color(20,20,30)
-            else:
-                # Table header
-                pdf.set_font("Arial","B",8)
-                pdf.set_fill_color(5,8,20)
-                pdf.set_text_color(0,245,255)
-                pdf.cell(35,7,"Attack Type",fill=True,border=1)
-                pdf.cell(25,7,"Severity",fill=True,border=1)
-                pdf.cell(40,7,"Source IP",fill=True,border=1)
-                pdf.cell(20,7,"Confidence",fill=True,border=1)
-                pdf.cell(30,7,"Status",fill=True,border=1)
-                pdf.cell(0,7,"Time",fill=True,border=1,ln=True)
-                pdf.set_text_color(20,20,30)
-                pdf.set_font("Arial","",7)
-                for a in attacks[:20]:
-                    sev = a.get('severity','medium').lower()
-                    r,g,b = SEV_COLORS.get(sev,(100,100,100))
-                    fill = (255,245,245) if sev=='critical' else (255,252,240) if sev=='high' else (252,252,252)
-                    pdf.set_fill_color(*fill)
-                    pdf.set_text_color(*SEV_COLORS.get(sev,(60,60,60)))
-                    pdf.cell(35,6,str(a.get('attack_type','?'))[:18],fill=True,border=1)
-                    pdf.cell(25,6,sev.upper(),fill=True,border=1)
-                    pdf.set_text_color(20,20,30)
-                    pdf.cell(40,6,str(a.get('source_ip','?'))[:20],fill=True,border=1)
-                    conf=a.get('confidence',0)
-                    pdf.cell(20,6,f"{round((conf or 0)*100)}%",fill=True,border=1)
-                    pdf.cell(30,6,str(a.get('status','?'))[:12],fill=True,border=1)
-                    pdf.cell(0,6,str(a.get('created_at',''))[:16],fill=True,border=1,ln=True)
-            pdf.ln(6)
-
-            # ── 5. Device Inventory ──
-            pdf.add_page()
-            pdf.section_title("Device Inventory", 5)
-            if not devices:
-                pdf.set_font("Arial","I",9)
-                pdf.cell(0,8,"  No devices found in database.",ln=True)
-            else:
-                pdf.set_font("Arial","B",8)
-                pdf.set_fill_color(5,8,20)
-                pdf.set_text_color(0,245,255)
-                pdf.cell(40,7,"Hostname",fill=True,border=1)
-                pdf.cell(35,7,"IP Address",fill=True,border=1)
-                pdf.cell(38,7,"MAC Address",fill=True,border=1)
-                pdf.cell(30,7,"Type",fill=True,border=1)
-                pdf.cell(0,7,"Status",fill=True,border=1,ln=True)
-                pdf.set_text_color(20,20,30)
-                pdf.set_font("Arial","",7)
-                for d in devices[:40]:
-                    st = d.get('status','unknown')
-                    fill = (240,255,245) if st=='trusted' else (255,240,240) if st in ('unknown','blocked') else (250,250,252)
-                    pdf.set_fill_color(*fill)
-                    scolor = (0,150,60) if st=='trusted' else (200,30,30) if st=='unknown' else (60,60,80)
-                    pdf.cell(40,5,str(d.get('hostname','--'))[:18],fill=True,border=1)
-                    pdf.cell(35,5,str(d.get('ip_address','--')),fill=True,border=1)
-                    pdf.cell(38,5,str(d.get('mac_address','--'))[:18],fill=True,border=1)
-                    pdf.cell(30,5,str(d.get('device_type','--')),fill=True,border=1)
-                    pdf.set_text_color(*scolor)
-                    pdf.cell(0,5,st.upper(),fill=True,border=1,ln=True)
-                    pdf.set_text_color(20,20,30)
-            pdf.ln(6)
-
-            # ── 6. Honeypot Activity ──
-            pdf.section_title("Honeypot Activity", 6)
-            total_hp = hp_status.get('total_events',0)
-            unique_hp = hp_status.get('unique_attackers',0)
-            pdf.kv_row("Total Honeypot Events", str(total_hp))
-            pdf.kv_row("Unique Attacker IPs", str(unique_hp))
-            pdf.ln(3)
-            if hp_events:
-                pdf.set_font("Arial","B",8)
-                pdf.set_fill_color(5,8,20); pdf.set_text_color(0,245,255)
-                pdf.cell(25,7,"Service",fill=True,border=1)
-                pdf.cell(40,7,"Attacker IP",fill=True,border=1)
-                pdf.cell(35,7,"Action",fill=True,border=1)
-                pdf.cell(25,7,"Credentials",fill=True,border=1)
-                pdf.cell(0,7,"Time",fill=True,border=1,ln=True)
-                pdf.set_text_color(20,20,30); pdf.set_font("Arial","",7)
-                for e in hp_events[:10]:
-                    cred = f"{e.get('username','--')}" if e.get('username') else '--'
-                    pdf.set_fill_color(255,245,240)
-                    pdf.cell(25,5,str(e.get('honeypot_type','?')).upper(),fill=True,border=1)
-                    pdf.cell(40,5,str(e.get('source_ip','?')),fill=True,border=1)
-                    pdf.cell(35,5,str(e.get('action','?'))[:18],fill=True,border=1)
-                    pdf.cell(25,5,cred[:12],fill=True,border=1)
-                    pdf.cell(0,5,str(e.get('created_at',''))[:16],fill=True,border=1,ln=True)
-            else:
-                pdf.set_font("Arial","I",9); pdf.set_text_color(100,100,120)
-                pdf.cell(0,7,"  No honeypot interactions recorded.",ln=True)
-                pdf.set_text_color(20,20,30)
-            pdf.ln(6)
-
-            # ── 7. Recent Alerts ──
-            pdf.section_title("Recent Alerts", 7)
-            if alerts:
-                for a in alerts[:15]:
-                    sev = a.get('severity','info')
-                    r,g,b = SEV_COLORS.get(sev,(100,100,120))
-                    pdf.set_text_color(r,g,b)
-                    pdf.set_font("Arial","B",8)
-                    ts_str = str(a.get('created_at',''))[:16]
-                    pdf.cell(0,6,f"  [{ts_str}]  {a.get('title','Alert')}",ln=True)
-                    pdf.set_font("Arial","",7); pdf.set_text_color(80,80,100)
-                    if a.get('message'):
-                        pdf.multi_cell(0,4,f"             {a['message']}")
-                    pdf.set_text_color(20,20,30)
-                    pdf.ln(1)
-            else:
-                pdf.set_font("Arial","I",9); pdf.set_text_color(0,160,80)
-                pdf.cell(0,8,"  No recent alerts. Network is secure. ✓",ln=True)
-                pdf.set_text_color(20,20,30)
-            pdf.ln(6)
-
-            # ── 8. Conclusion ──
-            pdf.section_title("Conclusion & Next Steps", 8)
-            conclusion = self._build_conclusion(score, a_attacks, devs.get('unknown',0))
-            pdf.set_font("Arial","",9)
-            pdf.multi_cell(0, 5, conclusion)
-            pdf.ln(6)
-
-            # ── Seal ──
-            pdf.set_fill_color(5,8,20)
-            pdf.rect(18, pdf.get_y(), 174, 18, 'F')
-            pdf.set_text_color(0,245,255)
-            pdf.set_font("Arial","B",11)
-            pdf.cell(0,10,"  👁  SECURED AND ANALYZED BY HORUSSHIELD 2.0",ln=True)
-            pdf.set_font("Arial","",7); pdf.set_text_color(0,180,200)
-            pdf.cell(0,7,f"     Team NullByte · WE School · Alexandria, Egypt · AI-Powered Cybersecurity Platform",ln=True)
-
+            data = self._collect_data()
+            pdf = HorusPDF(report_id, safe_facility)
+            self._cover(pdf, data, report_id, safe_facility, now, period_start)
+            self._executive(pdf, data, now, period_start)
+            self._threats(pdf, data, period_start)
+            self._network(pdf, data)
+            self._devices(pdf, data)
+            self._intelligence(pdf, data)
+            self._defenses(pdf, data)
+            self._findings(pdf, data)
+            self._health_and_controls(pdf, data)
+            self._quality(pdf, data, now, period_start)
             pdf.output(filepath)
-            logger.info(f"Report generated: {filepath}")
+            logger.info("General posture report generated: %s", filepath)
             return filepath
-
-        except Exception as e:
-            logger.error(f"Report generation failed: {e}")
-            import traceback; logger.error(traceback.format_exc())
+        except Exception as exc:
+            logger.error("Report generation failed: %s", exc, exc_info=True)
             return None
 
-    def _build_recommendations(self, score, devs, active_attacks, attacks):
-        recs = []
-        unknown = devs.get('unknown',0)
-        if unknown > 0:
-            recs.append({"title": f"Investigate {unknown} Unknown Device(s)",
-                         "detail": "Unknown devices on your network pose a significant security risk. Review their MAC addresses, determine if they are authorized, then either trust or block them through the Devices panel."})
-        if active_attacks > 0:
-            recs.append({"title": f"Respond to {active_attacks} Active Attack(s)",
-                         "detail": "Active attacks are currently ongoing. Use the Threats panel to mitigate each attack. Consider activating Anubis Lockdown mode for immediate network-wide protection."})
-        if score < 70:
-            recs.append({"title": "Improve Security Score",
-                         "detail": f"Current score is {score}/100. Key actions: remove unknown devices, mitigate open threats, ensure all devices have up-to-date firmware, and verify no dangerous ports are open."})
-        atk_types = set(a.get('attack_type','') for a in attacks)
-        if 'port_scan' in atk_types:
-            recs.append({"title": "Port Scan Activity Detected",
-                         "detail": "A port scan was recorded. This typically precedes a targeted attack. Review open ports, ensure non-essential services are disabled, and consider blocking the source IP permanently."})
-        if 'brute_force' in atk_types:
-            recs.append({"title": "Brute Force Attack Detected",
-                         "detail": "Brute force login attempts were recorded. Enable rate limiting on SSH/RDP/HTTP services, use strong passwords, and consider two-factor authentication on all administrative accounts."})
-        if 'ddos' in atk_types:
-            recs.append({"title": "DDoS Activity Recorded",
-                         "detail": "DDoS traffic was detected and blocked by HorusShield. Monitor bandwidth usage over the next 24 hours. If attacks persist, consider upstream traffic filtering."})
-        if not recs:
-            recs.append({"title": "Network Security is Satisfactory",
-                         "detail": f"No critical issues detected. Security score is {score}/100. Continue regular monitoring, keep the system updated, and run weekly security scans."})
-        return recs
+    def _collect_data(self):
+        try:
+            score = db.get_latest_score()
+        except Exception:
+            score = None
+        try:
+            traffic_history = db.get_traffic_history(minutes=PERIOD_HOURS * 60)
+        except Exception:
+            traffic_history = []
+        try:
+            attacks = db.get_attacks(limit=1000)
+        except Exception:
+            attacks = []
+        try:
+            alerts = db.get_alerts(limit=1000)
+        except Exception:
+            alerts = []
+        try:
+            devices = db.get_all_devices()
+        except Exception:
+            devices = []
+        try:
+            honeypot_events = db.get_honeypot_events(limit=1000)
+            honeypot_stats = db.get_honeypot_stats()
+        except Exception:
+            honeypot_events, honeypot_stats = [], {}
+        try:
+            mesh = db.get_mesh_topology()
+        except Exception:
+            mesh = {"nodes": [], "edges": []}
+        try:
+            predictions = db.get_recent_predictions(limit=100)
+        except Exception:
+            predictions = []
+        try:
+            audit = db.get_audit_log(limit=1000)
+        except Exception:
+            audit = []
+        try:
+            system = self._system_overview()
+        except Exception:
+            system = {}
+        latest = traffic_history[-1] if traffic_history else None
+        if latest is None:
+            try:
+                latest = db.get_latest_traffic() or {}
+            except Exception:
+                latest = {}
+        return {"score": score, "traffic": traffic_history, "latest_traffic": latest, "attacks": attacks, "alerts": alerts, "devices": devices, "honeypot_events": honeypot_events, "honeypot_stats": honeypot_stats, "mesh": mesh, "predictions": predictions, "audit": audit, "system": system}
 
-    def _build_conclusion(self, score, active_attacks, unknown_devices):
-        lvl = "secure" if score>=90 else "moderate risk" if score>=70 else "at risk" if score>=40 else "critical"
-        parts = [
-            f"This HorusShield security audit covers network activity analyzed by the AI engine.",
-            f"The overall network security status is rated as {lvl.upper()} with a score of {score}/100.",
-        ]
-        if active_attacks > 0:
-            parts.append(f"There are currently {active_attacks} active attack(s) that require immediate attention.")
-        if unknown_devices > 0:
-            parts.append(f"A total of {unknown_devices} unknown device(s) were detected and should be investigated.")
-        if score >= 85:
-            parts.append("The network defenses are operating effectively. Continue regular monitoring to maintain this level of security.")
+    @staticmethod
+    def _system_overview():
+        from services.system_monitor import system_monitor_service
+        return system_monitor_service.get_system_overview()
+
+    @staticmethod
+    def _in_period(item, period_start):
+        value = item.get("created_at") or item.get("timestamp") or item.get("started_at")
+        if not value:
+            return False
+        try:
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            return parsed.replace(tzinfo=None) >= period_start
+        except (TypeError, ValueError):
+            return False
+
+    def _cover(self, pdf, data, report_id, facility, now, period_start):
+        pdf.add_page()
+        pdf.set_fill_color(*NAVY)
+        pdf.rect(0, 0, 210, 297, "F")
+        pdf.set_text_color(0, 210, 225)
+        pdf.set_font("Helvetica", "B", 24)
+        pdf.set_y(48)
+        pdf.cell(0, 14, "HORUSSHIELD 2.0", align="C", ln=True)
+        pdf.set_font("Helvetica", "B", 16)
+        pdf.set_text_color(245, 248, 252)
+        pdf.cell(0, 10, "CYBERSECURITY SECURITY POSTURE REPORT", align="C", ln=True)
+        pdf.set_font("Helvetica", "", 10)
+        pdf.set_text_color(150, 170, 190)
+        pdf.cell(0, 8, "Security Assessment & Threat Intelligence Report", align="C", ln=True)
+        pdf.ln(25)
+        score = data["score"].get("total_score") if data["score"] else None
+        active = len([a for a in data["attacks"] if a.get("status") == "active" and self._in_period(a, period_start)])
+        pdf.set_fill_color(12, 20, 38)
+        pdf.rect(26, 126, 158, 57, "F")
+        pdf.set_text_color(150, 170, 190)
+        pdf.set_font("Helvetica", "B", 8)
+        pdf.set_xy(38, 137)
+        pdf.cell(64, 6, "OVERALL SECURITY SCORE")
+        pdf.cell(64, 6, "ACTIVE THREATS")
+        pdf.set_xy(38, 145)
+        pdf.set_text_color(0, 210, 225)
+        pdf.set_font("Helvetica", "B", 24)
+        pdf.cell(64, 14, f"{_number(score)}/100" if score is not None else "Unavailable")
+        pdf.set_text_color((220, 80, 80) if active else (70, 210, 140))
+        pdf.cell(64, 14, str(active))
+        pdf.set_text_color(150, 170, 190)
+        pdf.set_font("Helvetica", "", 8)
+        pdf.set_xy(38, 166)
+        pdf.cell(128, 6, f"Report ID: {report_id}")
+        pdf.set_xy(38, 174)
+        pdf.cell(128, 6, f"Reporting period: {period_start.strftime('%Y-%m-%d %H:%M')} UTC to {now.strftime('%Y-%m-%d %H:%M')} UTC")
+        pdf.set_y(222)
+        pdf.set_text_color(150, 170, 190)
+        pdf.set_font("Helvetica", "", 9)
+        pdf.cell(0, 6, f"Host: {data.get('system', {}).get('system', {}).get('hostname', 'Data unavailable')}", align="C", ln=True)
+        pdf.cell(0, 6, f"Operating system: {data.get('system', {}).get('system', {}).get('os', 'Data unavailable')}", align="C", ln=True)
+        pdf.cell(0, 6, f"Generated: {now.strftime('%Y-%m-%d %H:%M UTC')}  |  Facility: {facility}", align="C", ln=True)
+        pdf.set_text_color(*INK)
+
+    def _executive(self, pdf, data, now, period_start):
+        pdf.add_page()
+        pdf.report_title("01  Executive Security Summary", "Observed telemetry and analysis for the reporting period")
+        attacks = [a for a in data["attacks"] if self._in_period(a, period_start)]
+        alerts = [a for a in data["alerts"] if self._in_period(a, period_start)]
+        devices = data["devices"]
+        score = data["score"].get("total_score") if data["score"] else None
+        active = len([a for a in attacks if a.get("status") == "active"])
+        network_status = "Observed" if data["traffic"] else "Data unavailable"
+        pdf.metric_grid([("Score", f"{_number(score)}/100" if score is not None else None, (0, 150, 190)), ("Threats", len(attacks), None), ("Active", active, SEV_COLORS["critical"] if active else (0, 145, 90)), ("Events", len(alerts), None), ("Devices", len(devices), None), ("Network", network_status, None), ("Monitoring", "Active", (0, 145, 90)), ("Mesh nodes", len(data["mesh"].get("nodes", [])), None)])
+        pdf.section("Security assessment summary")
+        if attacks or alerts:
+            pdf.multi_cell(0, 5, f"HorusShield recorded {len(attacks)} attack record(s) and {len(alerts)} alert event(s) during the reporting period. {active} attack record(s) are currently marked active. These are observed records, not a guarantee of system security.")
         else:
-            parts.append("Immediate action is recommended to address the identified issues and improve the security posture.")
-        parts.append("All data in this report is collected in real-time by HorusShield 2.0 - Egyptian AI Cybersecurity Platform.")
-        return "\n".join(parts)
+            pdf.multi_cell(0, 5, "No attack or alert records were found during the reporting period. This indicates no recorded events in the available telemetry; it does not prove zero risk.")
+        pdf.ln(3)
+        pdf.section("Score composition")
+        score = data["score"]
+        if not score:
+            pdf.note("Score composition unavailable: no persisted security score snapshot was available.")
+        else:
+            components = score.get("components") or {}
+            fields = [("Device security", score.get("device_security")), ("Network health", score.get("network_health")), ("Attack history", score.get("attack_history")), ("Vulnerability exposure", score.get("vulnerability_exposure")), ("AI confidence", score.get("ai_confidence"))]
+            rows = [(label, _number(value), "Recorded") for label, value in fields if value is not None and float(value or 0) != 0]
+            rows += [(str(key), _number(value), "Recorded") for key, value in components.items() if isinstance(value, (int, float))]
+            self._rows_or_empty(pdf, ["Category", "Score", "Evidence"], rows, [75, 35, 68], "No category-level score factors were recorded.")
+
+    def _threats(self, pdf, data, period_start):
+        pdf.add_page()
+        pdf.report_title("02  Threat Landscape", "Attack records, severity, categories, and event chronology")
+        attacks = [a for a in data["attacks"] if self._in_period(a, period_start)]
+        by_sev = Counter(_severity(a.get("severity")) for a in attacks)
+        pdf.metric_grid([("Total", len(attacks), None), ("Active", sum(a.get("status") == "active" for a in attacks), SEV_COLORS["critical"]), ("Critical", by_sev["critical"], SEV_COLORS["critical"]), ("High", by_sev["high"], SEV_COLORS["high"]), ("Medium", by_sev["medium"], SEV_COLORS["medium"]), ("Low", by_sev["low"], SEV_COLORS["low"]), ("Resolved", sum(a.get("status") in ("mitigated", "resolved") for a in attacks), (0, 145, 90)), ("Categories", len(set(a.get("attack_type") for a in attacks)), None)])
+        pdf.section("Observed threat records")
+        rows = [(_text(attack.get("attack_type"), "Unknown"), _severity(attack.get("severity")).upper(), _text(attack.get("source_ip")), _text(attack.get("detected_by")), _text(attack.get("status")), _text(attack.get("created_at"))[:16]) for attack in attacks[:40]]
+        self._rows_or_empty(pdf, ["Type", "Severity", "Source", "Method", "Status", "Detected"], rows, [35, 22, 38, 25, 25, 33], "NO THREATS RECORDED\nNo attack records were found during this reporting period.")
+        pdf.section("Threat activity")
+        if attacks:
+            categories = Counter(_text(a.get("attack_type"), "Unknown") for a in attacks)
+            self._rows_or_empty(pdf, ["Observed category", "Records", "Share of recorded threats"], [(key, count, f"{count / len(attacks) * 100:.1f}%") for key, count in categories.most_common()], [78, 35, 40], "No threat categories recorded.")
+        else:
+            pdf.note("No timeline or distribution is shown because there are no threat records to chart.")
+
+    def _network(self, pdf, data):
+        pdf.add_page()
+        pdf.report_title("03  Network Security Analysis", "Telemetry snapshots collected by the network monitor")
+        latest = data["latest_traffic"]
+        if not latest:
+            pdf.note("No network traffic snapshots were recorded. Network metrics, protocol distribution, and anomalies are unavailable.")
+            return
+        pdf.metric_grid([("Bytes in", _number(latest.get("bytes_in")), None), ("Bytes out", _number(latest.get("bytes_out")), None), ("Packets in", _number(latest.get("packets_in")), None), ("Packets out", _number(latest.get("packets_out")), None), ("Connections", _number(latest.get("active_connections")), None), ("Bandwidth Mbps", _number(latest.get("bandwidth_mbps"), 2), None), ("Unique sources", _number(latest.get("unique_src_ips")), None), ("Unique ports", _number(latest.get("unique_ports")), None)])
+        pdf.section("Protocol distribution")
+        protocol_fields = [("TCP", latest.get("tcp_count")), ("UDP", latest.get("udp_count")), ("ICMP", latest.get("icmp_count")), ("Other", latest.get("other_count"))]
+        protocol_rows = [(name, _number(value), "Recorded") for name, value in protocol_fields if value is not None and float(value or 0) > 0]
+        self._rows_or_empty(pdf, ["Protocol", "Count", "Source"], protocol_rows, [70, 45, 68], "No protocol data recorded.")
+        pdf.section("Traffic timeline")
+        rows = [(_text(item.get("timestamp"))[:16], _number(item.get("bandwidth_mbps"), 2), _number(item.get("active_connections")), _number(item.get("packets_in")), _number(item.get("packets_out"))) for item in data["traffic"][-30:]]
+        self._rows_or_empty(pdf, ["Timestamp", "Bandwidth Mbps", "Connections", "Packets in", "Packets out"], rows, [35, 37, 37, 35, 34], "No traffic history recorded.")
+        pdf.note("Traffic volume is operational telemetry. It is not classified as malicious without a corresponding recorded security event.")
+
+    def _devices(self, pdf, data):
+        pdf.add_page()
+        pdf.report_title("04  Device Security", "Current inventory state from the device registry")
+        devices = data["devices"]
+        counts = Counter(_text(d.get("status"), "unknown").lower() for d in devices)
+        pdf.metric_grid([("Total", len(devices), None), ("Trusted", counts["trusted"], (0, 145, 90)), ("Unknown", counts["unknown"], SEV_COLORS["medium"]), ("Blocked", counts["blocked"], SEV_COLORS["high"]), ("Suspicious", counts["suspicious"], SEV_COLORS["critical"]), ("At risk", sum(float(d.get("risk_score") or 0) > 0 for d in devices), SEV_COLORS["high"]), ("Online", "Data unavailable", None), ("Offline", "Data unavailable", None)])
+        pdf.section("Device inventory")
+        rows = [(_text(d.get("hostname"), "Unknown"), _text(d.get("ip_address")), _text(d.get("mac_address")), _text(d.get("device_type")), _text(d.get("status")), _text(d.get("last_seen"))[:16]) for d in devices[:60]]
+        self._rows_or_empty(pdf, ["Device", "IP address", "MAC", "Type", "Status", "Last seen"], rows, [35, 31, 38, 25, 25, 24], "NO DEVICES RECORDED\nThe device registry contains no entries.")
+
+    def _intelligence(self, pdf, data):
+        pdf.add_page()
+        pdf.report_title("05  Attack Intelligence & AI Analysis", "Observed attack attribution and persisted prediction records")
+        attacks = data["attacks"]
+        source_counts = Counter(_text(a.get("source_ip"), "Unknown") for a in attacks if a.get("source_ip"))
+        pdf.section("Attack intelligence")
+        rows = [(_text(ip), count, "Observed attack record(s)") for ip, count in source_counts.most_common(15)]
+        self._rows_or_empty(pdf, ["Observed source", "Records", "Interpretation"], rows, [58, 30, 81], "No attack source data recorded.")
+        pdf.note("An observed source address is reported as telemetry only; this report does not label a country or IP as malicious without supporting event data.")
+        pdf.section("Attack prediction")
+        predictions = data["predictions"]
+        rows = [(_text(p.get("prediction_type")), _text(p.get("predicted_attack")), f"{float(p.get('probability', 0) or 0) * 100:.1f}%", _text(p.get("model_version")), _text(p.get("created_at"))[:16]) for p in predictions[:30]]
+        self._rows_or_empty(pdf, ["Type", "Prediction", "Probability", "Model", "Created"], rows, [32, 48, 28, 32, 29], "No persisted attack predictions are available.")
+        pdf.section("Detection methods")
+        methods = Counter(_text(a.get("detected_by"), "Unknown") for a in attacks)
+        self._rows_or_empty(pdf, ["Method", "Records", "Classification"], [(key, count, "Recorded source label") for key, count in methods.items()], [60, 35, 74], "No attack detection method data recorded.")
+
+    def _defenses(self, pdf, data):
+        pdf.add_page()
+        pdf.report_title("06  Honeypot & Mesh Defense", "Telemetry from deception services and coordinated defense nodes")
+        stats = data["honeypot_stats"]
+        pdf.section("Honeypot activity")
+        pdf.metric_grid([("Interactions", stats.get("total_events") if stats else None, None), ("Unique sources", stats.get("unique_attackers") if stats else None, None), ("Honeypot types", len(stats.get("by_type", [])) if stats else None, None), ("Status", "Telemetry available" if stats else "Data unavailable", None)])
+        rows = [(_text(e.get("honeypot_type")), _text(e.get("source_ip")), _text(e.get("action")), _text(e.get("threat_level")).upper(), _text(e.get("created_at"))[:16]) for e in data["honeypot_events"][:35]]
+        self._rows_or_empty(pdf, ["Service", "Source", "Action", "Level", "Timestamp"], rows, [30, 42, 42, 25, 40], "No honeypot interactions recorded during the reporting period.")
+        pdf.section("Mesh defense")
+        nodes = data["mesh"].get("nodes", [])
+        self._rows_or_empty(pdf, ["Node", "Role", "Status", "Zone", "Risk"], [(_text(n.get("node_id")), _text(n.get("role")), _text(n.get("status")), _text(n.get("zone")), _number(n.get("risk_score"))) for n in nodes], [45, 30, 35, 35, 34], "No mesh nodes are recorded.")
+        pdf.note(f"Mesh edges recorded: {len(data['mesh'].get('edges', []))}. Blocked-event totals are unavailable unless present in the mesh telemetry.")
+
+    def _findings(self, pdf, data):
+        pdf.add_page()
+        pdf.report_title("07  Findings & Recommendations", "Findings are generated only from observed records")
+        findings = []
+        for attack in data["attacks"]:
+            if _severity(attack.get("severity")) in ("critical", "high"):
+                findings.append((attack, "Recorded attack activity", _text(attack.get("attack_type"), "Unknown attack")))
+        for device in data["devices"]:
+            if _text(device.get("status"), "unknown").lower() in ("unknown", "suspicious", "blocked"):
+                findings.append((device, "Device registry requires review", f"Device {_text(device.get('hostname'), 'Unknown')} is marked {_text(device.get('status'), 'unknown')}"))
+        if not findings:
+            pdf.section("Top security findings")
+            pdf.note("NO EVIDENCE-BASED FINDINGS\nNo critical/high attack records or non-trusted device states were observed in the available data.", (0, 145, 90))
+            pdf.section("Recommendations")
+            pdf.note("No remediation recommendation was generated because no corresponding finding evidence was available.")
+            return
+        rows = []
+        for index, (item, title, evidence) in enumerate(findings[:25], 1):
+            severity = _severity(item.get("severity")) if item.get("severity") else ("high" if item.get("status") == "suspicious" else "medium")
+            affected = _text(item.get("source_ip") or item.get("hostname"), "Unknown component")
+            rows.append((f"HS-{index:03d}", title, severity.upper(), evidence, affected, _text(item.get("status"), "open").upper()))
+        pdf.section("Top security findings")
+        self._rows_or_empty(pdf, ["ID", "Title", "Severity", "Evidence", "Affected", "Status"], rows, [20, 34, 23, 49, 30, 22], "No findings recorded.")
+        pdf.section("Security recommendations")
+        recs = []
+        if any(item.get("source_ip") for item, _, _ in findings):
+            recs.append(("HIGH", "Review and respond to recorded high-severity attack activity", "Validate the affected source, target, and mitigation state against the attack records."))
+        if any(_text(item.get("status"), "").lower() in ("unknown", "suspicious") for item, _, _ in findings):
+            recs.append(("MEDIUM", "Review non-trusted devices", "Confirm ownership and intended access for devices marked unknown or suspicious."))
+        self._rows_or_empty(pdf, ["Priority", "What", "Suggested action"], recs, [25, 65, 88], "No recommendations generated.")
+
+    def _health_and_controls(self, pdf, data):
+        pdf.add_page()
+        pdf.report_title("08  System Health, Controls & Response", "Operational health is separated from cybersecurity findings")
+        system = data["system"]
+        pdf.section("System health")
+        if not system:
+            pdf.note("System health telemetry unavailable.")
+        else:
+            pdf.metric_grid([("CPU", f"{_number(system.get('cpu', {}).get('usage_percent'), 1)}%", None), ("Memory", f"{_number(system.get('memory', {}).get('percent'), 1)}%", None), ("Disk", f"{_number(system.get('disk', {}).get('percent'), 1)}%", None), ("Connections", _number(system.get("network", {}).get("active_connections")), None), ("Download", f"{_number(system.get('network', {}).get('download_mb_s'), 2)} Mbps", None), ("Upload", f"{_number(system.get('network', {}).get('upload_mb_s'), 2)} Mbps", None), ("Uptime", system.get("system", {}).get("uptime"), None), ("Processes", "Data unavailable", None)])
+            pdf.kv("Host", system.get("system", {}).get("hostname"))
+            pdf.kv("Operating system", system.get("system", {}).get("os"))
+        pdf.section("Security control coverage")
+        controls = [("Monitoring", "Available" if data["traffic"] or data["system"] else "Unavailable", "Traffic/system telemetry"), ("Threat detection", "Available" if data["attacks"] else "No records", "Attack registry"), ("Alerting", "Available" if data["alerts"] else "No records", "Alert registry"), ("Device visibility", "Available" if data["devices"] else "No records", "Device registry"), ("Audit logging", "Available" if data["audit"] else "No records", "Audit log"), ("Automated response", "Data unavailable", "No response aggregate exposed")]
+        self._rows_or_empty(pdf, ["Control", "Status", "Evidence"], controls, [55, 38, 85], "Control coverage unavailable.")
+        pdf.section("Incident / response summary")
+        incidents = [a for a in data["attacks"] if a.get("status") in ("active", "investigating", "mitigated", "resolved", "false_positive")]
+        if incidents:
+            self._rows_or_empty(pdf, ["ID", "Detected", "Severity", "Method", "Status", "Response"], [(_text(a.get("id")), _text(a.get("created_at"))[:16], _severity(a.get("severity")).upper(), _text(a.get("detected_by")), _text(a.get("status")).upper(), _text(a.get("mitigation"))) for a in incidents[:30]], [20, 32, 25, 30, 29, 42], "No incidents recorded.")
+        else:
+            pdf.note("No security incidents were recorded during the reporting period.")
+
+    def _quality(self, pdf, data, now, period_start):
+        pdf.add_page()
+        pdf.report_title("09  Data Quality & Technical Details", "Coverage, freshness, and reporting limitations")
+        sources = [("Security score", "Available" if data["score"] else "Unavailable"), ("Attack registry", "Available" if data["attacks"] else "No records"), ("Alert registry", "Available" if data["alerts"] else "No records"), ("Network telemetry", "Available" if data["traffic"] else "Unavailable"), ("Device registry", "Available" if data["devices"] else "No records"), ("Honeypot telemetry", "Available" if data["honeypot_events"] else "No records"), ("Mesh topology", "Available" if data["mesh"].get("nodes") else "No records"), ("AI predictions", "Available" if data["predictions"] else "No records"), ("System monitor", "Available" if data["system"] else "Unavailable"), ("Audit log", "Available" if data["audit"] else "No records")]
+        self._rows_or_empty(pdf, ["Telemetry source", "Collection state"], sources, [100, 78], "No telemetry source information available.")
+        pdf.section("Reporting context")
+        pdf.kv("Report generated", now.strftime("%Y-%m-%d %H:%M UTC"))
+        pdf.kv("Reporting period", f"{period_start.strftime('%Y-%m-%d %H:%M UTC')} to {now.strftime('%Y-%m-%d %H:%M UTC')}")
+        pdf.kv("Collection status", "Summary of persisted telemetry; no new scan launched")
+        pdf.kv("Unavailable telemetry", "Online/offline device split, process count, response aggregates where not exposed")
+        pdf.kv("Source handling", "Observed data, analysis, and recommendations are presented separately")
+        pdf.note("A missing record means the relevant source did not provide data to this report. It is not interpreted as a clean result.")
+
+    @staticmethod
+    def _rows_or_empty(pdf, headers, rows, widths, empty):
+        if rows:
+            pdf.table(headers, rows, widths)
+        else:
+            pdf.note(empty)

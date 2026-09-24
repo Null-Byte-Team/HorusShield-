@@ -192,6 +192,9 @@ def create_app():
     def _security_headers(response):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
+        # Google Identity Services needs to retain the opener reference so
+        # its authentication popup can post the verified credential back.
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = (
             "geolocation=(), microphone=(), camera=(), payment=(), usb=()"
@@ -240,6 +243,7 @@ def create_app():
     from api.routes_auth          import auth_bp
     from api.routes_vscanner      import vscanner_bp
     from api.routes_audit         import audit_bp
+    from api.routes_sysmon        import sysmon_bp
 
     ws = HorusSocket(app)
 
@@ -279,6 +283,7 @@ def create_app():
     app.register_blueprint(auth_bp,      url_prefix="/api/auth")
     app.register_blueprint(vscanner_bp,  url_prefix="/api/vscanner")
     app.register_blueprint(audit_bp,     url_prefix="/api/audit")
+    app.register_blueprint(sysmon_bp,    url_prefix="/api/sysmon")
 
     def start_engines():
         """Start all monitoring engines (network, device, attack, mesh, honeypot, AI)."""

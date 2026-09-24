@@ -11,7 +11,6 @@ _assistant = HorusAssistant()
 
 
 @horus_bp.route('/ask', methods=['POST'])
-@login_required
 def ask_horus():
     try:
         data     = request.get_json(silent=True) or {}

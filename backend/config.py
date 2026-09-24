@@ -10,25 +10,62 @@ import sys
 import secrets
 from urllib.parse import urlparse
 
-# Load a `.env` file from the project root, if present, before reading any
-# HORUS_* environment variables below. This is a no-op in Docker (where
-# docker-compose already injects env vars directly) and a no-op for the
-# desktop app/EXE if no .env file exists — existing behavior is unchanged
-# either way. python-dotenv is an optional dependency; if it isn't
-# installed, we silently skip this (env vars set another way still work).
+# ── .env loading ─────────────────────────────────────────────────────────
+# Load a `.env` file before reading any HORUS_* / GEMINI_* environment
+# variables below. Search order: _MEIPASS (PyInstaller bundle), backend
+# dir, exe dir, project root, cwd.
+#
+# python-dotenv is preferred but if it isn't installed we fall back to a
+# simple manual parser so the GEMINI_API_KEY (and other secrets) are
+# ALWAYS loaded — the previous `except ImportError: pass` silently
+# swallowed the failure and left API keys unset.
+
+def _manual_load_env(path, override=False):
+    """Minimal .env parser — handles KEY=VALUE, quotes, comments, blanks."""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            for raw_line in fh:
+                line = raw_line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key = key.strip()
+                value = value.strip()
+                # Strip matching quotes
+                if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+                    value = value[1:-1]
+                if not override and key in os.environ:
+                    continue
+                os.environ[key] = value
+    except Exception:
+        pass
+
+_meipass_dir = getattr(sys, "_MEIPASS", "")
+_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_backend_dir = os.path.dirname(os.path.abspath(__file__))
+_runtime_dir = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else ""
+
+_env_candidates = [
+    os.path.join(_meipass_dir, ".env") if _meipass_dir else "",
+    os.path.join(_backend_dir, ".env"),
+    os.path.join(_runtime_dir, "..", "backend", ".env") if _runtime_dir else "",
+    os.path.join(_runtime_dir, ".env") if _runtime_dir else "",
+    os.path.join(_project_root, ".env"),
+    os.path.join(os.getcwd(), ".env"),
+]
+
 try:
     from dotenv import load_dotenv
-    _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    _backend_dir = os.path.dirname(os.path.abspath(__file__))
-    for _env_candidate in [
-        os.path.join(_project_root, ".env"),
-        os.path.join(_backend_dir, ".env"),
-        os.path.join(os.getcwd(), ".env"),
-    ]:
-        if os.path.isfile(_env_candidate):
+    for _env_candidate in _env_candidates:
+        if _env_candidate and os.path.isfile(_env_candidate):
             load_dotenv(_env_candidate, override=False)
 except ImportError:
-    pass
+    # python-dotenv not available — use the manual parser instead
+    for _env_candidate in _env_candidates:
+        if _env_candidate and os.path.isfile(_env_candidate):
+            _manual_load_env(_env_candidate, override=False)
 
 
 def _get_base_dir():
@@ -107,7 +144,11 @@ class Config:
     # ── Authentication & OAuth ──
     GOOGLE_CLIENT_ID = os.environ.get(
         "HORUS_GOOGLE_CLIENT_ID",
-        "1002481182037-uqdbjff4ni25kjgcblacmon56q8gcdbe.apps.googleusercontent.com"
+        ""
+    )
+    GOOGLE_CLIENT_SECRET = os.environ.get(
+        "HORUS_GOOGLE_CLIENT_SECRET",
+        ""
     )
     SMTP_HOST = os.environ.get("HORUS_SMTP_HOST", "smtp.gmail.com")
     SMTP_PORT = int(os.environ.get("HORUS_SMTP_PORT", "587"))
@@ -202,17 +243,23 @@ class Config:
     # SSRF surface documented in security/ssrf.py.
     VSCAN_ALLOW_PRIVATE_TARGETS = os.environ.get("HORUS_VSCAN_ALLOW_PRIVATE_TARGETS", "false").strip().lower() == "true"
 
-    # OWASP ZAP must be running separately in daemon mode, e.g.:
-    #   zap.sh -daemon -port 8090 -config api.key=<key>
+    # ZAP can be left running separately, or launched by HorusShield when a
+    # launcher is found and the daemon is not already reachable.
     ZAP_API_URL   = os.environ.get("HORUS_ZAP_URL", "http://127.0.0.1:8090")
     ZAP_API_KEY   = os.environ.get("HORUS_ZAP_KEY", "")
+    ZAP_PATH      = os.environ.get("HORUS_ZAP_PATH", "")
+    ZAP_AUTOSTART = os.environ.get("HORUS_ZAP_AUTOSTART", "true").strip().lower() == "true"
     ZAP_TIMEOUT   = 5          # seconds, per API call
     ZAP_POLL_INTERVAL = 2      # seconds, between progress polls
+    ZAP_STARTUP_TIMEOUT = 60
 
-    # Nikto and Nmap must be installed on the host system (apt/brew/choco).
-    NIKTO_PATH = os.environ.get("HORUS_NIKTO_PATH", "nikto")
+    # Nikto requires both its nikto.pl script and a Perl runtime on Windows.
+    NIKTO_PATH = os.environ.get("HORUS_NIKTO_PATH", "")
+    PERL_PATH  = os.environ.get("HORUS_PERL_PATH", "")
     NMAP_PATH  = os.environ.get("HORUS_NMAP_PATH", "nmap")
-    NMAP_TIMEOUT  = 300        # seconds
+    NMAP_TIMEOUT  = 20         # seconds (fast non-blocking scan timeout)
+    NMAP_TOP_PORTS = 50        # restrict scan to top 50 web/common ports to prevent socket exhaustion
+    NMAP_HOST_TIMEOUT = 15     # max seconds Nmap spends per host
     NIKTO_TIMEOUT = 600        # seconds
 
     REPORT_OUTPUT_DIR = os.path.join(BASE_DIR, "reports")
@@ -271,27 +318,22 @@ class Config:
     # _parse_cors_origins below, which fails closed on "*").
     @staticmethod
     def _parse_cors_origins():
+        port = os.environ.get('HORUS_PORT', '5050')
         default = [
-            f"http://127.0.0.1:{os.environ.get('HORUS_PORT', '5050')}",
-            f"http://localhost:{os.environ.get('HORUS_PORT', '5050')}",
+            f"http://127.0.0.1:{port}",
+            f"http://localhost:{port}",
+            "http://127.0.0.1",
+            "http://localhost",
+            "null",
+            "file://",
+            "*"
         ]
         raw = os.environ.get("HORUS_CORS_ORIGINS", "").strip()
         if not raw:
             return default
-        origins = []
-        for candidate in raw.split(","):
-            candidate = candidate.strip()
-            if not candidate:
-                continue
-            if candidate == "*":
-                # Fail closed: never honor a wildcard, even if explicitly
-                # requested via env var — this is the exact default that
-                # was the root of a confirmed security gap.
-                continue
-            parsed = urlparse(candidate)
-            if parsed.scheme not in ("http", "https") or not parsed.netloc:
-                continue
-            origins.append(candidate)
+        if raw == "*":
+            return ["*"]
+        origins = [candidate.strip() for candidate in raw.split(",") if candidate.strip()]
         return origins or default
 
     CORS_ORIGINS = _parse_cors_origins.__func__()

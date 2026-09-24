@@ -1,10 +1,4 @@
-"""
-HorusShield Network Monitor — Feature 1
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Real-time network traffic monitoring using Scapy.
-Runs as a background thread capturing and analyzing packets.
-"""
-
+import queue
 import threading
 import time
 from datetime import datetime
@@ -20,7 +14,8 @@ logger = get_logger("network_monitor", "network")
 class NetworkMonitor:
     """Real-time network monitoring engine.
 
-    Captures packets using Scapy, analyzes them through the PacketAnalyzer,
+    Captures packets using Scapy via a non-blocking queue, analyzes them in batches
+    through the PacketAnalyzer without throttling active network downloads,
     and stores periodic traffic snapshots in the database.
     """
 
@@ -29,9 +24,12 @@ class NetworkMonitor:
         self.socketio = socketio
         self._running = False
         self._capture_thread = None
+        self._worker_thread = None
         self._snapshot_thread = None
         self._interface = config.MONITOR_INTERFACE
         self._interval = config.MONITOR_INTERVAL
+        self._packet_queue = queue.Queue(maxsize=20000)
+        self._dropped_packet_count = 0
 
         # Real-time stats
         self._in_fallback_mode = False
@@ -52,7 +50,13 @@ class NetworkMonitor:
             return
 
         self._running = True
-        logger.info("Starting network monitor")
+        logger.info("Starting network monitor (non-blocking queue mode)")
+
+        # Start packet processing worker thread
+        self._worker_thread = threading.Thread(
+            target=self._packet_worker_loop, daemon=True, name="PacketWorker"
+        )
+        self._worker_thread.start()
 
         # Start packet capture thread
         self._capture_thread = threading.Thread(
@@ -79,8 +83,29 @@ class NetworkMonitor:
         """Check if the monitor is running."""
         return self._running
 
+    def _packet_worker_loop(self):
+        """High-performance non-blocking queue consumer for packet analysis."""
+        while self._running:
+            batch = []
+            try:
+                pkt = self._packet_queue.get(timeout=0.2)
+                batch.append(pkt)
+                while len(batch) < 256:
+                    try:
+                        batch.append(self._packet_queue.get_nowait())
+                    except queue.Empty:
+                        break
+            except queue.Empty:
+                continue
+
+            if batch and self._running:
+                try:
+                    self.analyzer.analyze_packet_batch(batch)
+                except Exception as e:
+                    logger.debug(f"Batch analysis error: {e}")
+
     def _capture_loop(self):
-        """Main packet capture loop using Scapy."""
+        """Main packet capture loop using Scapy with zero-latency enqueue."""
         try:
             from scapy.all import sniff, conf
             conf.verb = 0
@@ -90,7 +115,10 @@ class NetworkMonitor:
             def _process_packet(packet):
                 if not self._running:
                     return
-                self.analyzer.analyze_packet(packet)
+                try:
+                    self._packet_queue.put_nowait(packet)
+                except queue.Full:
+                    self._dropped_packet_count += 1
 
             while self._running:
                 try:
@@ -132,6 +160,7 @@ class NetworkMonitor:
         """Fallback: monitor system-level network metrics using psutil."""
         try:
             import psutil
+            import socket
             prev_io = psutil.net_io_counters()
             prev_time = time.time()
 
@@ -150,6 +179,61 @@ class NetworkMonitor:
                     pkts_in = curr_io.packets_recv - prev_io.packets_recv
                     pkts_out = curr_io.packets_sent - prev_io.packets_sent
 
+                    # Collect active connections telemetry
+                    try:
+                        conns = psutil.net_connections(kind='inet')
+                    except Exception as conn_err:
+                        logger.debug(f"Connection inspection error: {conn_err}")
+                        conns = []
+
+                    tcp_cnt = 0
+                    udp_cnt = 0
+                    other_cnt = 0
+                    now_ts = datetime.utcnow().isoformat()
+                    now_time = time.time()
+                    time_str = datetime.now().strftime("%H:%M:%S")
+
+                    for c in conns:
+                        is_tcp = c.type == socket.SOCK_STREAM
+                        is_udp = c.type == socket.SOCK_DGRAM
+                        if is_tcp:
+                            tcp_cnt += 1
+                        elif is_udp:
+                            udp_cnt += 1
+                        else:
+                            other_cnt += 1
+
+                        # Ingest active flow records into packet buffer
+                        l_ip = c.laddr.ip if c.laddr else "0.0.0.0"
+                        l_port = c.laddr.port if c.laddr else None
+                        r_ip = c.raddr.ip if c.raddr else None
+                        r_port = c.raddr.port if c.raddr else None
+                        status = getattr(c, 'status', 'ESTABLISHED') or 'ACTIVE'
+
+                        if r_ip:
+                            direction = "outbound" if (l_ip.startswith("192.168.") or l_ip.startswith("10.") or l_ip == "127.0.0.1") and not (r_ip.startswith("192.168.") or r_ip.startswith("10.") or r_ip == "127.0.0.1") else "local"
+                            dst_str = f"{r_ip}:{r_port}" if r_port else r_ip
+                        else:
+                            direction = "inbound"
+                            dst_str = "LISTEN"
+
+                        src_str = f"{l_ip}:{l_port}" if l_port else l_ip
+
+                        self.analyzer.record_flow({
+                            "timestamp": now_time,
+                            "time_str": time_str,
+                            "size": 64 + (int(bytes_in + bytes_out) % 1400 if (bytes_in + bytes_out) > 0 else 0),
+                            "protocol": "TCP" if is_tcp else "UDP" if is_udp else "OTHER",
+                            "src_ip": l_ip,
+                            "src_port": l_port,
+                            "dst_ip": r_ip or "0.0.0.0",
+                            "dst_port": r_port,
+                            "src": src_str,
+                            "dst": dst_str,
+                            "direction": direction,
+                            "status": status,
+                        })
+
                     self.current_stats = {
                         "packets_per_sec": (pkts_in + pkts_out) / elapsed,
                         "bytes_per_sec": (bytes_in + bytes_out) / elapsed,
@@ -160,8 +244,18 @@ class NetworkMonitor:
                         "bandwidth_mbps": ((bytes_in + bytes_out) * 8) / (elapsed * 1_000_000),
                         "download_mbps": (bytes_in * 8) / (elapsed * 1_000_000),
                         "upload_mbps": (bytes_out * 8) / (elapsed * 1_000_000),
-                        "active_connections": len(psutil.net_connections()),
-                        "timestamp": datetime.utcnow().isoformat(),
+                        "active_connections": len(conns),
+                        "tcp_count": tcp_cnt,
+                        "udp_count": udp_cnt,
+                        "icmp_count": 0,
+                        "other_count": other_cnt,
+                        "protocol_distribution": {
+                            "tcp": tcp_cnt,
+                            "udp": udp_cnt,
+                            "icmp": 0,
+                            "other": other_cnt,
+                        },
+                        "timestamp": now_ts,
                     }
 
                     # Store snapshot
@@ -172,6 +266,10 @@ class NetworkMonitor:
                         bytes_out=bytes_out,
                         bandwidth_mbps=self.current_stats["bandwidth_mbps"],
                         active_connections=self.current_stats["active_connections"],
+                        tcp_count=tcp_cnt,
+                        udp_count=udp_cnt,
+                        icmp_count=0,
+                        other_count=other_cnt,
                     )
 
                     # Emit to WebSocket
@@ -208,6 +306,10 @@ class NetworkMonitor:
                     "download_mbps": snapshot.get("download_mbps", 0),
                     "upload_mbps": snapshot.get("upload_mbps", 0),
                     "active_connections": snapshot.get("active_connections", 0),
+                    "tcp_count": snapshot.get("tcp_count", 0),
+                    "udp_count": snapshot.get("udp_count", 0),
+                    "icmp_count": snapshot.get("icmp_count", 0),
+                    "other_count": snapshot.get("other_count", 0),
                     "protocol_distribution": {
                         "tcp": snapshot.get("tcp_count", 0),
                         "udp": snapshot.get("udp_count", 0),
@@ -248,7 +350,7 @@ class NetworkMonitor:
         stats = dict(self.current_stats or {})
         has_live_signal = any(
             (stats.get(key) or 0) > 0
-            for key in ("packets_per_sec", "bandwidth_mbps", "download_mbps", "upload_mbps")
+            for key in ("packets_per_sec", "bandwidth_mbps", "download_mbps", "upload_mbps", "active_connections")
         )
         if has_live_signal:
             stats.setdefault("timestamp", datetime.utcnow().isoformat())
@@ -275,6 +377,10 @@ class NetworkMonitor:
             "download_mbps": (bytes_in * 8) / (interval * 1_000_000),
             "upload_mbps": (bytes_out * 8) / (interval * 1_000_000),
             "active_connections": latest.get("active_connections", 0) or 0,
+            "tcp_count": latest.get("tcp_count", 0) or 0,
+            "udp_count": latest.get("udp_count", 0) or 0,
+            "icmp_count": latest.get("icmp_count", 0) or 0,
+            "other_count": latest.get("other_count", 0) or 0,
             "protocol_distribution": {
                 "tcp": latest.get("tcp_count", 0) or 0,
                 "udp": latest.get("udp_count", 0) or 0,
@@ -286,12 +392,9 @@ class NetworkMonitor:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# REST Blueprint  →  GET /api/traffic/live
-# Allows the UI (and any REST client) to poll the current live stats without
-# waiting for a WebSocket push.  The route is registered in app.py.
-# Monitor instance is fetched from app.extensions (no global coupling).
+# REST Blueprint  →  GET /api/traffic/live, /packets, /protocols
 # ─────────────────────────────────────────────────────────────────────────────
-from flask import Blueprint, jsonify, current_app
+from flask import Blueprint, jsonify, request, current_app
 
 traffic_bp = Blueprint("traffic", __name__)
 
@@ -316,6 +419,10 @@ def get_live_traffic():
                 "download_mbps":      ((latest.get("bytes_in", 0) or 0) * 8) / (interval * 1_000_000),
                 "upload_mbps":        ((latest.get("bytes_out", 0) or 0) * 8) / (interval * 1_000_000),
                 "active_connections": latest.get("active_connections", 0) or 0,
+                "tcp_count":          latest.get("tcp_count", 0) or 0,
+                "udp_count":          latest.get("udp_count", 0) or 0,
+                "icmp_count":         latest.get("icmp_count", 0) or 0,
+                "other_count":        latest.get("other_count", 0) or 0,
                 "protocol_distribution": {
                     "tcp":   latest.get("tcp_count", 0) or 0,
                     "udp":   latest.get("udp_count", 0) or 0,
@@ -329,3 +436,55 @@ def get_live_traffic():
 
     stats = monitor.get_live_or_latest_stats()
     return jsonify(stats)
+
+
+@traffic_bp.route("/packets", methods=["GET"])
+def get_packet_logs():
+    """Return bounded live packet and flow event logs."""
+    monitor = current_app.extensions.get("monitor")
+    if monitor is None:
+        return jsonify([]), 200
+    try:
+        limit = min(max(request.args.get("limit", 50, type=int), 1), 100)
+        packets = monitor.get_analyzer().get_recent_packets(limit=limit)
+        return jsonify(packets)
+    except Exception as e:
+        logger.error(f"packet logs error: {e}")
+        return jsonify([]), 200
+
+
+@traffic_bp.route("/protocols", methods=["GET"])
+def get_protocol_split():
+    """Return protocol distribution metrics."""
+    monitor = current_app.extensions.get("monitor")
+    if monitor is None:
+        return jsonify({"tcp": 0, "udp": 0, "icmp": 0, "other": 0, "total": 0}), 200
+    stats = monitor.get_live_or_latest_stats()
+    proto = stats.get("protocol_distribution") or {
+        "tcp": stats.get("tcp_count", 0) or 0,
+        "udp": stats.get("udp_count", 0) or 0,
+        "icmp": stats.get("icmp_count", 0) or 0,
+        "other": stats.get("other_count", 0) or 0,
+    }
+    total = sum(proto.values())
+    proto_copy = dict(proto)
+    proto_copy["total"] = total
+    return jsonify(proto_copy)
+
+
+@traffic_bp.route("/refresh", methods=["POST"])
+def refresh_live_traffic():
+    """Ensure the monitor thread is running and return a clean live traffic snapshot."""
+    monitor = current_app.extensions.get("monitor")
+    if monitor is None:
+        return jsonify({"error": "Monitor not started yet"}), 503
+
+    if not monitor.is_running():
+        try:
+            monitor.start()
+        except Exception as exc:
+            return jsonify({"error": f"Monitor refresh failed: {exc}"}), 503
+
+    stats = monitor.get_live_or_latest_stats()
+    return jsonify(stats)
+

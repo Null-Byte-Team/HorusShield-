@@ -1,6 +1,57 @@
 """Tests for the AI layer — security scorer and V-8 Scanner AI Cortex."""
 
 
+def test_gemini_call_translates_history_and_response(monkeypatch):
+    import json
+    import urllib.request
+    from ai import conversation_engine
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            return False
+
+        def read(self):
+            return json.dumps({
+                "candidates": [{"content": {"parts": [{"text": "Gemini reply"}]}}]
+            }).encode()
+
+    captured = {}
+
+    def fake_urlopen(request, timeout):
+        captured["request"] = request
+        captured["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    result = conversation_engine._call_gemini(
+        "system", "new question", [{"role": "assistant", "content": "previous answer"}]
+    )
+
+    payload = json.loads(captured["request"].data)
+    assert result == "Gemini reply"
+    assert payload["system_instruction"]["parts"][0]["text"] == "system"
+    assert payload["contents"][0]["role"] == "model"
+    assert payload["contents"][-1]["parts"][0]["text"] == "new question"
+
+
+def test_gemini_is_selected_before_claude(monkeypatch):
+    from ai.conversation_engine import AdvancedHorusAssistant
+
+    assistant = AdvancedHorusAssistant()
+    monkeypatch.setattr(assistant, "_get_security_data", lambda: {})
+    monkeypatch.setattr(assistant, "_try_gemini", lambda *args: "Gemini wins")
+    monkeypatch.setattr(assistant, "_try_claude", lambda *args: "Claude should not run")
+
+    response, engine = assistant.ask_with_engine("hello", user_id="test")
+
+    assert response == "Gemini wins"
+    assert engine == "gemini"
+
+
 def test_security_scorer_score_is_clamped():
     from ai.security_scorer import SecurityScorer
 

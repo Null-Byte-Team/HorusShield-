@@ -18,8 +18,28 @@ class ThreatMapService:
     """
     
     def __init__(self):
-        # We'd use a local GeoLite2 DB in production, using ip-api.com for demo
         self.geo_cache = {}
+
+    def is_local_or_private(self, ip):
+        """Check if an IP is localhost or RFC1918 private."""
+        if not ip:
+            return True
+        s = str(ip).strip()
+        return (
+            s.startswith("127.") or
+            s.startswith("192.168.") or
+            s.startswith("10.") or
+            s.startswith("172.16.") or
+            s.startswith("172.17.") or
+            s.startswith("172.18.") or
+            s.startswith("172.19.") or
+            s.startswith("172.2") or
+            s.startswith("172.30.") or
+            s.startswith("172.31.") or
+            s == "::1" or
+            s.startswith("fe80:") or
+            s.startswith("0.0.0.0")
+        )
 
     def get_threat_points(self):
         """Analyzes recent attacks to get high-level geographic data."""
@@ -29,20 +49,20 @@ class ThreatMapService:
             
             for attack in attacks:
                 ip = attack.get('source_ip')
-                if not ip or ip.startswith('192.168.') or ip.startswith('10.'):
+                if not ip or self.is_local_or_private(ip):
                     continue
                 
                 geo = self._get_geo_info(ip)
                 if geo:
                     points.append({
-                        "id": attack['id'],
-                        "type": attack['attack_type'],
-                        "severity": attack['severity'],
+                        "id": attack.get('id'),
+                        "type": attack.get('attack_type') or attack.get('type', 'attack'),
+                        "severity": attack.get('severity', 'medium'),
                         "lat": geo.get('lat'),
                         "lon": geo.get('lon'),
                         "city": geo.get('city'),
                         "country": geo.get('country'),
-                        "timestamp": attack['created_at']
+                        "timestamp": attack.get('created_at')
                     })
             
             return points
@@ -52,26 +72,37 @@ class ThreatMapService:
             return []
 
     def _get_geo_info(self, ip):
-        """Mock/Real GeoIP lookup."""
+        """Real GeoIP lookup with caching — no random/fake data."""
+        if not ip or self.is_local_or_private(ip):
+            return None
         if ip in self.geo_cache:
             return self.geo_cache[ip]
             
         try:
-            # Simple free API for demonstration
-            # Note: rate limited, don't use in production loops
-            # r = requests.get(f"http://ip-api.com/json/{ip}", timeout=2)
-            # data = r.json()
+            import urllib.request
+            import urllib.parse
+            import json as _json
             
-            # For Demo: Random Global Points
-            data = {
-                "lat": (random.random() * 120) - 60,
-                "lon": (random.random() * 360) - 180,
-                "city": "Unknown City",
-                "country": "Unknown Country"
-            }
-            self.geo_cache[ip] = data
-            return data
+            clean_ip = urllib.parse.quote(str(ip).strip())
+            req = urllib.request.Request(
+                f"http://ip-api.com/json/{clean_ip}?fields=status,country,city,lat,lon",
+                headers={"User-Agent": "HorusShield/2.0"}
+            )
+            with urllib.request.urlopen(req, timeout=2.5) as resp:
+                data = _json.loads(resp.read().decode("utf-8"))
+            if data.get("status") == "success":
+                geo = {
+                    "lat": data.get("lat"),
+                    "lon": data.get("lon"),
+                    "city": data.get("city", "Unknown City"),
+                    "country": data.get("country", "Unknown Country")
+                }
+                self.geo_cache[ip] = geo
+                return geo
         except Exception as e:
             logger.debug(f"Geo lookup failed for {ip}: {e}")
-            return None
+        return None
+
+threat_map_service = ThreatMapService()
+
 

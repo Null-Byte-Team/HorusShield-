@@ -71,7 +71,7 @@ def test_vscan_start_rejects_malformed_url(client, auth_headers):
     assert resp.status_code in (400, 409)
 
 
-def test_vscan_start_rejects_active_scan_without_authorization(client, auth_headers):
+def test_vscan_start_rejects_removed_active_scan(client, auth_headers):
     resp = client.post(
         "/api/vscanner/scan/start",
         json={
@@ -82,12 +82,39 @@ def test_vscan_start_rejects_active_scan_without_authorization(client, auth_head
         headers=auth_headers,
     )
     assert resp.status_code == 400
-    assert "authorization" in resp.get_json()["error"].lower()
+    assert "not available" in resp.get_json()["error"].lower()
 
 
 def test_vscan_report_rejects_unknown_format(client, auth_headers):
     resp = client.get("/api/vscanner/scan/does-not-exist/report/exe", headers=auth_headers)
     assert resp.status_code == 400
+
+
+def test_google_client_id_endpoint_returns_configured_value(client, db, monkeypatch):
+    monkeypatch.delenv("HORUS_GOOGLE_CLIENT_ID", raising=False)
+    db.set_setting(
+        "google_client_id",
+        "test-client.apps.googleusercontent.com",
+        "Google OAuth test client",
+    )
+
+    resp = client.get("/api/auth/google/client-id")
+
+    assert resp.status_code == 200
+    assert resp.get_json()["configured"] is True
+    assert resp.get_json()["client_id"] == "test-client.apps.googleusercontent.com"
+
+
+def test_google_callback_redirects_to_app_with_session_token(client, monkeypatch):
+    monkeypatch.setattr(
+        "api.routes_auth.auth_manager.google_auth",
+        lambda credential, client_id: {"success": True, "token": "session-token"},
+    )
+
+    resp = client.post("/api/auth/google/callback", data={"credential": "verified-credential"})
+
+    assert resp.status_code == 302
+    assert resp.location.endswith("#google_token=session-token")
 
 
 def test_audit_log_endpoint_returns_a_list(client, auth_headers):

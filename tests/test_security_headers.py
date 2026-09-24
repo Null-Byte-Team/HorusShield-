@@ -5,6 +5,7 @@ def test_security_headers_present_on_health_endpoint(client):
     resp = client.get("/api/health")
     assert resp.headers.get("X-Content-Type-Options") == "nosniff"
     assert resp.headers.get("X-Frame-Options") == "DENY"
+    assert resp.headers.get("Cross-Origin-Opener-Policy") == "same-origin-allow-popups"
     assert resp.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
     assert "geolocation=()" in resp.headers.get("Permissions-Policy", "")
     csp = resp.headers.get("Content-Security-Policy", "")

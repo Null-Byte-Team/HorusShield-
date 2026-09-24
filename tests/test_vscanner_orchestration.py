@@ -56,9 +56,19 @@ NIKTO_FAIL = {"success": False, "findings": [], "error": "nikto binary not found
 NIKTO_TIMEOUT = {"success": False, "findings": [], "error": "Nikto scan timed out"}
 
 
+@pytest.fixture(autouse=True)
+def clean_cache():
+    from vscanner.domain_reputation import domain_reputation
+    domain_reputation.clear_cache()
+    yield
+    domain_reputation.clear_cache()
+
+
 @pytest.fixture
 def mgr():
     m = VScannerManager(socketio=MagicMock())
+    m.fast_scanner = MagicMock()
+    m.fast_scanner.scan.return_value = {"success": True, "findings": []}
     return m
 
 
@@ -352,14 +362,20 @@ def test_scan_cancellation(mgr, mock_db):
 
 
 # ─────────────────────────────────────────────────────────────────────
-# 14. Concurrent scan rejection
+# 14. Concurrent scans use independent stop flags
 # ─────────────────────────────────────────────────────────────────────
 
-def test_concurrent_scan_rejection(mgr, mock_db):
-    mgr._active_scan_id = "existing-scan"
-    result = mgr.start_scan(SAMPLE_TARGET)
-    assert result["success"] is False
-    assert "already running" in result["error"].lower()
+def test_concurrent_scans_are_independent(mgr, mock_db):
+    with patch("vscanner.orchestrator.threading.Thread") as thread:
+        thread.return_value.start.return_value = None
+        first = mgr.start_scan(SAMPLE_TARGET, tools=["nmap"])
+        second = mgr.start_scan(SAMPLE_TARGET, tools=["nmap"])
+
+    assert first["success"] is True
+    assert second["success"] is True
+    assert first["scan_id"] != second["scan_id"]
+    assert mgr._stop_flags[first["scan_id"]] is False
+    assert mgr._stop_flags[second["scan_id"]] is False
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -470,7 +486,7 @@ def test_findings_persisted_to_db(mgr, mock_db):
 
 
 # ─────────────────────────────────────────────────────────────────────
-# 20. Scan cleanup: _active_scan_id cleared and stop_flags removed
+# 20. Scan cleanup removes the scan's stop flag
 # ─────────────────────────────────────────────────────────────────────
 
 def test_scan_cleanup(mgr, mock_db):
@@ -484,7 +500,6 @@ def test_scan_cleanup(mgr, mock_db):
     with patch.object(mgr, "_revalidate", return_value=True):
         mgr._run(SCAN_ID, SAMPLE_TARGET, ["nmap"], False)
 
-    assert mgr._active_scan_id is None
     assert SCAN_ID not in mgr._stop_flags
 
 
@@ -506,7 +521,6 @@ def test_exception_marks_scan_failed(mgr, mock_db):
                     if c.kwargs.get("status") == "failed"]
     assert len(failed_calls) >= 1
     assert "Unexpected crash" in failed_calls[0].kwargs.get("error", "")
-    assert mgr._active_scan_id is None
     assert SCAN_ID not in mgr._stop_flags
 
 

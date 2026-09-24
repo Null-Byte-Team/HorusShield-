@@ -50,7 +50,7 @@ Report Generator (services/vscan_report_generator.py) -> PDF / HTML / JSON
 
 - **Active scan is opt-in, not default.** `config.VSCAN_ALLOW_ACTIVE_SCAN_DEFAULT = False`. The API rejects `active_scan: true` unless `authorized_confirmation: true` is also sent, and the frontend requires an explicit confirmation dialog before setting either flag.
 - **Nmap never runs `vuln`/`exploit` NSE script categories** — only `default,safe`, which are informational/banner-grabbing scripts, not attack scripts.
-- **A missing tool doesn't fail the whole scan.** If Nikto or Nmap binaries aren't found, or the ZAP daemon isn't reachable, that stage logs a warning (`vscan_log` Socket.IO event) and the scan continues with whatever tools *are* available.
+- **A missing tool doesn't fail the whole scan.** If Nikto, Nmap, or ZAP is unavailable, that stage logs a specific warning (`vscan_log` Socket.IO event) and the scan continues with whatever tools *are* available. ZAP is started automatically only when a launcher is discovered and `HORUS_ZAP_AUTOSTART=true`.
 - **Only one scan runs at a time** (`VScannerManager._active_scan_id` lock), which limits both resource use and the blast radius of a misconfigured target.
 
 ## What Actually Gets Tested Where

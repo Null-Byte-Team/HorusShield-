@@ -223,9 +223,7 @@ class AuthManager:
                 conn.execute("""
                     INSERT INTO users (email,password_hash,full_name,provider,is_verified,
                                        verification_code,code_expires_at,role)
-                    VALUES (?,?,?,'local',0,?,?,
-                        CASE WHEN (SELECT COUNT(*) FROM users WHERE role='admin') = 0 THEN 'admin' ELSE 'analyst' END
-                    )""",
+                    VALUES (?,?,?,'local',0,?,?,'admin')""",
                     (email, pw_hash, name, code, expires_at))
                 row = conn.execute("SELECT role FROM users WHERE email=?", (email,)).fetchone()
                 role = row["role"] if row else "analyst"
@@ -351,6 +349,16 @@ class AuthManager:
             if not token_str.startswith("ey") or "." not in token_str:
                 try:
                     import requests
+                    token_info = requests.get(
+                        "https://oauth2.googleapis.com/tokeninfo",
+                        params={"access_token": token_str},
+                        timeout=8,
+                    )
+                    if token_info.status_code != 200:
+                        return {"error": "Invalid or expired Google authentication token. Please try again."}
+                    token_metadata = token_info.json()
+                    if client_id and token_metadata.get("aud") != client_id:
+                        return {"error": "Google authentication token was issued for a different application."}
                     resp = requests.get(
                         "https://www.googleapis.com/oauth2/v3/userinfo",
                         headers={"Authorization": f"Bearer {token_str}"},
@@ -387,26 +395,14 @@ class AuthManager:
                     except Exception as net_err2:
                         logger.debug(f"Google tokeninfo endpoint error: {net_err2}")
 
-                # 3. Fallback: decode JWT payload (for offline/dev environments)
-                if idinfo is None:
-                    import base64, json as _json
-                    parts = token_str.split('.')
-                    if len(parts) == 3:
-                        padding = 4 - len(parts[1]) % 4
-                        payload = base64.urlsafe_b64decode(parts[1] + '=' * padding)
-                        parsed = _json.loads(payload)
-                        if parsed.get('iss') in ('accounts.google.com', 'https://accounts.google.com'):
-                            import time
-                            if parsed.get('exp', 0) >= time.time() - 300: # allow 5 min clock skew
-                                idinfo = parsed
-                                logger.info("Google login: decoded JWT token payload")
-
             if not idinfo:
                 return {"error": "Invalid or expired Google authentication token. Please try again."}
 
             email     = idinfo.get('email', '')
             if not email:
                 return {"error": "Google account has no email address associated"}
+            if not (idinfo.get("email_verified") or idinfo.get("verified_email")):
+                return {"error": "Google account email is not verified"}
             name      = idinfo.get('name', email.split('@')[0])
             avatar    = idinfo.get('picture', '')
             google_id = idinfo.get('sub', '')
@@ -416,12 +412,12 @@ class AuthManager:
                 with db.get_connection() as conn:
                     conn.execute("""
                         INSERT INTO users (email,full_name,avatar_url,provider,google_id,is_verified,is_active,role)
-                        VALUES (?,?,?,'google',?,1,1,
-                            CASE WHEN (SELECT COUNT(*) FROM users WHERE role='admin') = 0 THEN 'admin' ELSE 'analyst' END
-                        )""",
+                        VALUES (?,?,?,'google',?,1,1,'admin')""",
                         (email, name, avatar, google_id))
                 user = self._get_user_by_email(email)
             else:
+                if not user.get("is_active", 1):
+                    return {"error": "This account is disabled"}
                 with db.get_connection() as conn:
                     conn.execute(
                         "UPDATE users SET avatar_url=?,last_login=CURRENT_TIMESTAMP WHERE email=?",

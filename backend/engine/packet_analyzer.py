@@ -43,7 +43,7 @@ class PacketAnalyzer:
         self.ip_syn_counts    = defaultdict(int)
         self.ip_port_access   = defaultdict(set)
         self.ip_failed_auths  = defaultdict(int)
-        self.ip_timestamps    = defaultdict(list)
+        self.ip_timestamps    = defaultdict(lambda: deque(maxlen=2000))
 
     def _new_counters(self):
         return {"packets_in":0,"packets_out":0,"bytes_in":0,"bytes_out":0,
@@ -54,15 +54,35 @@ class PacketAnalyzer:
 
     def analyze_packet(self, packet):
         if not _ensure_scapy(): return
-        with self._lock:
-            try:
-                info = self._extract_packet_info(packet)
-                if info:
+        try:
+            info = self._extract_packet_info(packet)
+            if info:
+                with self._lock:
                     self.packet_buffer.append(info)
                     self._update_counters(info)
                     self._update_ip_tracking(info)
-            except Exception as e:
-                logger.debug(f"Packet error: {e}")
+        except Exception as e:
+            logger.debug(f"Packet error: {e}")
+
+    def analyze_packet_batch(self, packets):
+        """High-throughput batch analysis with single lock acquisition."""
+        if not _ensure_scapy() or not packets:
+            return
+        parsed_infos = []
+        for pkt in packets:
+            try:
+                info = self._extract_packet_info(pkt)
+                if info:
+                    parsed_infos.append(info)
+            except Exception:
+                pass
+        if not parsed_infos:
+            return
+        with self._lock:
+            for info in parsed_infos:
+                self.packet_buffer.append(info)
+                self._update_counters(info)
+                self._update_ip_tracking(info)
 
     def _extract_packet_info(self, packet):
         if not _ensure_scapy(): return None
@@ -158,7 +178,7 @@ class PacketAnalyzer:
         if p["is_syn"]: self.ip_syn_counts[src]+=1
         if p.get("dst_port"): self.ip_port_access[src].add(p["dst_port"])
         ts = self.ip_timestamps[src]
-        while ts and ts[0] < now-60: ts.pop(0)
+        while ts and ts[0] < now-60: ts.popleft()
 
     def get_snapshot(self):
         with self._lock:
@@ -224,3 +244,60 @@ class PacketAnalyzer:
                 "syn_count":self.ip_syn_counts.get(ip,0),
                 "unique_ports_accessed":len(self.ip_port_access.get(ip,set())),
                 "failed_auths":self.ip_failed_auths.get(ip,0)}
+
+    def record_flow(self, flow_info):
+        """Record a socket/network flow event into the packet buffer."""
+        if not flow_info or not isinstance(flow_info, dict):
+            return
+        entry = {
+            "timestamp": flow_info.get("timestamp") or time.time(),
+            "time_str": flow_info.get("time_str") or datetime.now().strftime("%H:%M:%S"),
+            "size": flow_info.get("size", 64),
+            "protocol": (flow_info.get("protocol") or "tcp").upper(),
+            "src_ip": flow_info.get("src_ip", "127.0.0.1"),
+            "dst_ip": flow_info.get("dst_ip", "127.0.0.1"),
+            "src_port": flow_info.get("src_port"),
+            "dst_port": flow_info.get("dst_port"),
+            "src": flow_info.get("src") or (f"{flow_info.get('src_ip')}:{flow_info.get('src_port')}" if flow_info.get('src_port') else str(flow_info.get('src_ip', ''))),
+            "dst": flow_info.get("dst") or (f"{flow_info.get('dst_ip')}:{flow_info.get('dst_port')}" if flow_info.get('dst_port') else str(flow_info.get('dst_ip', ''))),
+            "direction": flow_info.get("direction", "inbound"),
+            "status": flow_info.get("status", "ESTABLISHED"),
+            "flags": flow_info.get("flags", ""),
+        }
+        with self._lock:
+            self.packet_buffer.append(entry)
+
+    def get_recent_packets(self, limit=50):
+        """Get recent packets/flows formatted for live display."""
+        with self._lock:
+            items = list(self.packet_buffer)
+
+        result = []
+        for p in reversed(items[-limit:]):
+            ts = p.get("timestamp")
+            if isinstance(ts, (int, float)):
+                t_str = datetime.fromtimestamp(ts).strftime("%H:%M:%S")
+            elif isinstance(ts, str) and "T" in ts:
+                t_str = ts.split("T")[1][:8]
+            else:
+                t_str = p.get("time_str") or datetime.now().strftime("%H:%M:%S")
+
+            src_ip = p.get("src_ip") or "127.0.0.1"
+            dst_ip = p.get("dst_ip") or "127.0.0.1"
+            src_p = p.get("src_port")
+            dst_p = p.get("dst_port")
+            src_str = p.get("src") or (f"{src_ip}:{src_p}" if src_p else src_ip)
+            dst_str = p.get("dst") or (f"{dst_ip}:{dst_p}" if dst_p else dst_ip)
+
+            result.append({
+                "timestamp": t_str,
+                "protocol": (p.get("protocol") or "TCP").upper(),
+                "src": src_str,
+                "dst": dst_str,
+                "size": p.get("size", 64),
+                "direction": p.get("direction", "inbound"),
+                "status": p.get("status", "OK"),
+                "flags": p.get("flags", ""),
+            })
+        return result
+

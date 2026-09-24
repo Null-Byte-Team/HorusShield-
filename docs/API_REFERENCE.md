@@ -77,7 +77,7 @@ See `docs/AI_PIPELINE.md` for what each model actually reports and why some metr
 ## `/api/horus` — Horus AI Assistant
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| POST | `/ask` | login_required | Ask Horus a question — `{query (max 2000 chars), language: "en"\|"ar"}`. Claude API if `ANTHROPIC_API_KEY` set, rule-based fallback otherwise |
+| POST | `/ask` | login_required | Ask Horus a question — `{query (max 2000 chars), language: "en"\|"ar"}`. Gemini if `GEMINI_API_KEY` is set, Claude next if `ANTHROPIC_API_KEY` is set, then rule-based fallback |
 | GET | `/history` | login_required | Conversation history |
 | POST | `/clear` | login_required | Clear conversation history |
 

@@ -36,6 +36,7 @@ venv/
 env/
 ENV/
 .venv/
+.venv311/
 .env/
 Pipfile.lock
 

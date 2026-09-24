@@ -57,8 +57,46 @@ V-8 Scanner orchestrates three separate tools it doesn't bundle — install what
 | Tool | Install | Config |
 |---|---|---|
 | Nmap | `apt install nmap` / `brew install nmap` / [nmap.org](https://nmap.org/download.html) | `HORUS_NMAP_PATH` (default: `nmap` on PATH) |
-| Nikto | `apt install nikto` / [github.com/sullo/nikto](https://github.com/sullo/nikto) | `HORUS_NIKTO_PATH` (default: `nikto` on PATH) |
-| OWASP ZAP | Run as a daemon: `zap.sh -daemon -port 8090 -config api.key=<key>` — or via `docker compose --profile vscanner up` | `HORUS_ZAP_URL`, `HORUS_ZAP_KEY` |
+| Nikto | Install Nikto and a Perl runtime (Strawberry Perl is supported on Windows) | `HORUS_NIKTO_PATH`, `HORUS_PERL_PATH` |
+| OWASP ZAP | Install ZAP; HorusShield can start `zap.bat` in daemon mode on Windows | `HORUS_ZAP_URL`, `HORUS_ZAP_KEY`, `HORUS_ZAP_PATH` |
+
+### Windows V-8 scanner setup
+
+HorusShield resolves tools in this order: an explicit path environment variable,
+the executable/script on `PATH`, then standard `Program Files` locations. Set
+these variables when the app is started from an IDE or packaged EXE with a
+different `PATH`:
+
+```text
+HORUS_NMAP_PATH=C:\Program Files (x86)\Nmap\nmap.exe
+HORUS_PERL_PATH=C:\Strawberry\perl\bin\perl.exe
+HORUS_NIKTO_PATH=C:\Nikto\program\nikto.pl
+HORUS_ZAP_PATH=C:\Program Files\ZAP\Zed Attack Proxy\zap.bat
+HORUS_ZAP_AUTOSTART=true
+```
+
+Nikto is launched as `perl.exe <absolute nikto.pl path>` with Nikto's directory
+as its working directory. ZAP is launched with `zap.bat -daemon`; HorusShield
+waits for `/JSON/core/view/version/` before scanning and cleans up only a ZAP
+process it started. A separately running daemon is reused.
+
+The authenticated `GET /api/vscanner/tools` endpoint returns boolean
+availability in `tools` and diagnostic version/runtime/path information in
+`details`. It does not expose the process environment or command-line secrets.
+
+Manual checks from the same terminal used to start HorusShield:
+
+```powershell
+nmap --version
+perl -v
+perl C:\Nikto\program\nikto.pl -Version
+C:\Program Files\ZAP\Zed Attack Proxy\zap.bat -version
+```
+
+Common errors are actionable: missing Java prevents ZAP startup, missing Perl
+prevents Nikto, and a ZAP startup timeout means its API never became ready.
+The current machine must have Java, Perl, and the relevant tool installed;
+HorusShield cannot install these runtimes automatically.
 
 A scan still runs with whatever subset of these three is available — a missing tool logs a warning for that stage and the scan continues with the rest.
 

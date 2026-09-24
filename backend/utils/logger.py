@@ -42,11 +42,22 @@ class FileFormatter(logging.Formatter):
         module = getattr(record,'module_name','system')
         return f"{ts} [{record.levelname:>8}] {module:>12} | {record.getMessage()}"
 
+
+class SafeStreamHandler(logging.StreamHandler):
+    """Ignore writes after a captured application stream has been closed."""
+
+    def handleError(self, record):
+        exc_type, exc_value, _ = sys.exc_info()
+        if isinstance(exc_value, (OSError, ValueError)):
+            return
+        super().handleError(record)
+
+
 def get_logger(name="horus", module_name="system"):
     logger = logging.getLogger(f"horus.{name}")
     if not logger.handlers:
         logger.setLevel(logging.DEBUG)
-        ch = logging.StreamHandler(sys.stdout)
+        ch = SafeStreamHandler(sys.stdout)
         ch.setLevel(logging.INFO)
         ch.setFormatter(HorusFormatter())
         logger.addHandler(ch)

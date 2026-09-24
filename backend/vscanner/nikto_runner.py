@@ -10,7 +10,6 @@ generate any of Nikto's test payloads.
 """
 import json
 import shlex
-import shutil
 import subprocess
 import tempfile
 import os
@@ -18,6 +17,7 @@ from typing import Any, Dict, List, Optional
 
 from config import active_config as config
 from utils.logger import get_logger
+from vscanner.tool_discovery import resolve_nikto, resolve_perl
 
 logger = get_logger("nikto_runner", "vscanner")
 
@@ -30,21 +30,26 @@ class NiktoRunner:
         self.timeout = timeout or config.NIKTO_TIMEOUT
 
     def is_available(self) -> bool:
-        return shutil.which(self.nikto_path) is not None
+        return bool(resolve_nikto(self.nikto_path) and resolve_perl(config.PERL_PATH))
 
     def scan(self, target_url: str) -> Dict[str, Any]:
         """Run `nikto -h <url> -Format json -output <tmpfile>` and parse it.
 
         Returns {"success": bool, "findings": [...], "error": str}
         """
-        if not self.is_available():
-            return {"success": False, "findings": [], "error": "nikto binary not found on PATH"}
+        script = resolve_nikto(self.nikto_path)
+        perl = resolve_perl(config.PERL_PATH)
+        if not script:
+            return {"success": False, "findings": [], "error": "Nikto script not found"}
+        if not perl:
+            return {"success": False, "findings": [], "error": "Nikto was found, but Perl is unavailable"}
 
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
             out_path = tmp.name
 
         cmd = [
-            self.nikto_path,
+            perl,
+            script,
             "-h", target_url,
             "-Format", "json",
             "-output", out_path,
@@ -53,7 +58,8 @@ class NiktoRunner:
         logger.info(f"Nikto scan starting: {' '.join(shlex.quote(c) for c in cmd)}")
         try:
             proc = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=self.timeout
+                cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                cwd=os.path.dirname(script), timeout=self.timeout, shell=False
             )
         except subprocess.TimeoutExpired:
             self._cleanup(out_path)
@@ -61,7 +67,7 @@ class NiktoRunner:
         except Exception as e:
             logger.error(f"Nikto execution error: {e}")
             self._cleanup(out_path)
-            return {"success": False, "findings": [], "error": str(e)}
+            return {"success": False, "findings": [], "error": f"Nikto could not start: {e}"}
 
         findings: List[Dict[str, Any]] = []
         try:
@@ -70,10 +76,12 @@ class NiktoRunner:
                     data = json.load(f)
                 findings = self._normalize(data)
             elif proc.returncode != 0:
-                return {"success": False, "findings": [], "error": proc.stderr.strip()[:500]}
+                return {"success": False, "findings": [], "error": f"Nikto exited with code {proc.returncode}: {proc.stderr.strip()[:400]}"}
+            else:
+                return {"success": False, "findings": [], "error": "Nikto returned no output"}
         except Exception as e:
             logger.error(f"Nikto output parse error: {e}")
-            return {"success": False, "findings": [], "error": f"Parse error: {e}"}
+            return {"success": False, "findings": [], "error": f"Nikto returned invalid output: {e}"}
         finally:
             self._cleanup(out_path)
 

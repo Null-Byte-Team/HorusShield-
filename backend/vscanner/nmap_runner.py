@@ -19,6 +19,7 @@ from urllib.parse import urlparse
 
 from config import active_config as config
 from utils.logger import get_logger
+from vscanner.tool_discovery import resolve_nmap
 
 logger = get_logger("nmap_runner", "vscanner")
 
@@ -31,7 +32,7 @@ class NmapRunner:
         self.timeout = timeout or config.NMAP_TIMEOUT
 
     def is_available(self) -> bool:
-        return shutil.which(self.nmap_path) is not None
+        return resolve_nmap(self.nmap_path) is not None
 
     @staticmethod
     def _host_from_url(target_url: str) -> str:
@@ -47,15 +48,29 @@ class NmapRunner:
         if not self.is_available():
             return {"success": False, "host": host, "ports": [], "error": "nmap binary not found on PATH"}
 
+        executable = resolve_nmap(self.nmap_path)
+        if not executable:
+            return {"success": False, "host": host, "ports": [], "error": "Nmap executable not found"}
+        top_ports = getattr(config, "NMAP_TOP_PORTS", 50)
+        host_timeout = getattr(config, "NMAP_HOST_TIMEOUT", 15)
         cmd = [
-            self.nmap_path,
-            "-sV",                       # version detection
-            "--script", "default,safe",  # NO 'vuln'/'exploit' categories, no crafted payloads
-            "-T3",                       # polite timing, avoid hammering the target
-            "-oX", "-",                  # XML to stdout
+            executable,
+            "-sT",                                    # Unprivileged TCP connect scan (avoids WinPcap/Npcap driver deadlock on Windows)
+            "-Pn",                                    # Skip host discovery ping (prevents hanging on target firewalls)
+            "-n",                                     # Disable reverse DNS lookup (avoids 30s DNS timeouts)
+            "--open",                                 # Only report open ports
+            "-sV",                                    # Version detection
+            "--version-intensity", "1",               # Light/fast version detection (avoids socket exhaustion)
+            "--top-ports", str(top_ports),            # Scan top web/common ports only
+            "--script", "banner,http-title,ssl-cert", # Lightweight, non-intrusive banner/cert scripts
+            "--script-timeout", "5s",                 # Strict per-script timeout
+            "--host-timeout", f"{host_timeout}s",     # Strict per-host timeout
+            "--max-retries", "0",                     # Avoid hanging on dropped packets
+            "-T4",                                    # Aggressive/fast timing
+            "-oX", "-",                               # XML to stdout
             host,
         ]
-        logger.info(f"Nmap scan starting: {' '.join(shlex.quote(c) for c in cmd)}")
+        logger.info(f"Nmap fast scan starting: {' '.join(shlex.quote(c) for c in cmd)}")
         try:
             proc = subprocess.run(
                 cmd, capture_output=True, text=True, timeout=self.timeout

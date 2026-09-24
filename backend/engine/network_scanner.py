@@ -181,17 +181,51 @@ class NetworkScanner:
     # ── helpers ──
 
     def _build_device_dict(self, ip: str, mac: str) -> Dict:
-        """Construct a normalised device dict from an IP + MAC pair."""
+        """Construct a normalised device dict from an IP + MAC pair using the fingerprint engine."""
         hostname = get_hostname(ip)
         vendor = mac_to_vendor(mac)
-        return {
-            "ip_address": ip,
-            "mac_address": mac,
-            "hostname": hostname,
-            "vendor": vendor,
-            "device_type": classify_device_type(hostname, vendor),
-            "is_gateway": ip == self.gateway_ip,
-        }
+        is_gw = (ip == self.gateway_ip)
+
+        try:
+            from device_fingerprinting.engine import fingerprint_engine
+            fp = fingerprint_engine.fingerprint_device(
+                ip=ip,
+                mac=mac,
+                hostname=hostname,
+                vendor=vendor,
+                is_gateway=is_gw,
+                background_enrich=False,
+            )
+            return {
+                "ip_address": ip,
+                "mac_address": mac,
+                "hostname": hostname,
+                "vendor": fp.manufacturer or fp.vendor or vendor,
+                "manufacturer": fp.manufacturer or vendor,
+                "device_type": fp.device_type,
+                "model": fp.model or "",
+                "os": fp.os,
+                "os_info": fp.os,
+                "confidence": fp.confidence,
+                "evidence": fp.evidence,
+                "is_gateway": is_gw,
+            }
+        except Exception:
+            return {
+                "ip_address": ip,
+                "mac_address": mac,
+                "hostname": hostname,
+                "vendor": vendor,
+                "manufacturer": vendor,
+                "device_type": classify_device_type(hostname, vendor),
+                "model": "",
+                "os": "Unknown",
+                "os_info": "Unknown",
+                "confidence": 15,
+                "evidence": ["ARP discovery"],
+                "is_gateway": is_gw,
+            }
+
 
     @staticmethod
     def _host_candidates(network_range: str, limit: int = 512) -> List[str]:

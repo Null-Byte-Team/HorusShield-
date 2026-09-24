@@ -126,11 +126,20 @@ class DatabaseManager:
         ip_address: Optional[str] = None,
         hostname: str = "Unknown",
         vendor: str = "Unknown",
-        device_type: str = "unknown",
+        device_type: str = "Unknown Device",
         status: str = "unknown",
         is_gateway: int = 0,
+        manufacturer: str = "Unknown",
+        model: Optional[str] = None,
+        confidence: int = 0,
+        evidence: Optional[Any] = None,
+        fingerprint: Optional[Any] = None,
     ) -> int:
         """Insert or update a device row; return the row id."""
+        evidence_json = json.dumps(evidence) if isinstance(evidence, list) else (evidence or "[]")
+        fingerprint_json = json.dumps(fingerprint) if isinstance(fingerprint, dict) else (fingerprint or "{}")
+        mfg = manufacturer or vendor
+
         with self.get_connection() as conn:
             existing = conn.execute(
                 "SELECT id FROM devices WHERE mac_address = ?", (mac_address,)
@@ -138,17 +147,31 @@ class DatabaseManager:
             if existing:
                 conn.execute(
                     """UPDATE devices
-                       SET ip_address=?, hostname=?, vendor=?, is_gateway=?,
+                       SET ip_address=?, hostname=?, vendor=?, manufacturer=?,
+                           device_type=CASE WHEN ? != 'Unknown Device' AND ? != 'unknown' THEN ? ELSE device_type END,
+                           model=COALESCE(NULLIF(?, ''), model),
+                           confidence=CASE WHEN ? > 0 THEN ? ELSE confidence END,
+                           is_gateway=?,
                            last_seen=CURRENT_TIMESTAMP, last_activity='seen'
                        WHERE mac_address=?""",
-                    (ip_address, hostname, vendor, is_gateway, mac_address),
+                    (
+                        ip_address, hostname, vendor, mfg,
+                        device_type, device_type, device_type,
+                        model or "",
+                        confidence, confidence,
+                        is_gateway, mac_address
+                    ),
                 )
                 return existing["id"]
             cursor = conn.execute(
                 """INSERT INTO devices
-                   (mac_address, ip_address, hostname, vendor, device_type, status, is_gateway)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                (mac_address, ip_address, hostname, vendor, device_type, status, is_gateway),
+                   (mac_address, ip_address, hostname, vendor, manufacturer, device_type,
+                    model, confidence, evidence, fingerprint, status, is_gateway)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    mac_address, ip_address, hostname, vendor, mfg, device_type,
+                    model or "", confidence, evidence_json, fingerprint_json, status, is_gateway
+                ),
             )
             return cursor.lastrowid
 
@@ -168,7 +191,10 @@ class DatabaseManager:
                 row = conn.execute("SELECT * FROM devices WHERE ip_address = ?", (ip_address,)).fetchone()
             else:
                 return None
-        return self._decode_json_fields(self._row_to_dict(row), {"open_ports": []})
+        return self._decode_json_fields(
+            self._row_to_dict(row),
+            {"open_ports": [], "evidence": [], "fingerprint": {}}
+        )
 
     def get_all_devices(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
         """Return all devices, optionally filtered by status."""
@@ -179,12 +205,16 @@ class DatabaseManager:
                 ).fetchall()
             else:
                 rows = conn.execute("SELECT * FROM devices ORDER BY last_seen DESC").fetchall()
-        return [self._decode_json_fields(r, {"open_ports": []}) for r in self._rows_to_dicts(rows)]
+        return [
+            self._decode_json_fields(r, {"open_ports": [], "evidence": [], "fingerprint": {}})
+            for r in self._rows_to_dicts(rows)
+        ]
 
     def update_device(self, device_id: int, **kwargs: Any) -> None:
         """Update allowed device fields by id."""
         allowed = {
-            "ip_address", "hostname", "vendor", "device_type", "os_info",
+            "ip_address", "hostname", "vendor", "manufacturer", "device_type",
+            "model", "os_info", "confidence", "evidence", "fingerprint",
             "open_ports", "status", "is_gateway", "risk_score",
             "last_seen", "last_activity", "notes",
         }
@@ -194,11 +224,8 @@ class DatabaseManager:
         set_clause = ", ".join(f"{k}=?" for k in fields)
         values = list(fields.values()) + [device_id]
         with self.get_connection() as conn:
-            # nosec B608: `fields` keys are filtered against the hardcoded
-            # `allowed` set two lines above — never raw caller input —
-            # and all values are parameterized. See db_manager.py's
-            # update_vscan() for the fuller explanation of this pattern.
             conn.execute(f"UPDATE devices SET {set_clause} WHERE id=?", values)  # nosec B608
+
 
     def update_device_status(self, mac_address: str, status: str) -> None:
         """Update device status by MAC address."""
@@ -257,6 +284,7 @@ class DatabaseManager:
         limit: int = 50,
         status: Optional[str] = None,
         severity: Optional[str] = None,
+        attack_type: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Return attacks ordered by creation time (newest first)."""
         with self.get_connection() as conn:
@@ -268,6 +296,9 @@ class DatabaseManager:
             if severity:
                 query += " AND severity = ?"
                 params.append(severity)
+            if attack_type:
+                query += " AND attack_type = ?"
+                params.append(attack_type)
             query += " ORDER BY created_at DESC LIMIT ?"
             params.append(limit)
             rows = conn.execute(query, params).fetchall()
@@ -798,7 +829,7 @@ class DatabaseManager:
             "traffic": latest_traffic or {},
             "attack_distribution": self._rows_to_dicts(attack_types),
             "lockdown_active": self.get_setting("lockdown_active", "false") == "true",
-            "demo_mode": self.get_setting("demo_mode", "true") == "true",
+            "demo_mode": self.get_setting("demo_mode", "false") == "true",
         }
 
     # ══════════════════════════════════════

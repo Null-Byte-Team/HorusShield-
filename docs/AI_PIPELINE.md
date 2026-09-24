@@ -47,10 +47,13 @@ total_score = Σ (component_score × weight)
 
 ## Horus AI Assistant (`ai/conversation_engine.py`, wrapped by `services/horus_assistant.py`)
 
-Two-tier design:
+Hosted-provider plus deterministic fallback design:
 
-1. **Primary**: if `ANTHROPIC_API_KEY` is set, `_call_claude()` sends the conversation to Claude (`claude-sonnet-4-20250514`). Before the call, `_get_security_data()` pulls live numbers straight from the database (security score, device counts, active attacks, recent alerts, honeypot/mesh stats) and `_try_claude()` folds them into the system prompt — so Claude is answering questions grounded in HorusShield's actual current state, not just general knowledge.
-2. **Fallback**: if the key isn't set, or the API call fails for any reason, a rule-based responder handles common security questions (phishing, password hygiene, general HorusShield status) using keyword matching. The chatbot never hard-fails — it degrades to the fallback silently.
+1. **Primary**: if `GEMINI_API_KEY` is set, `_call_gemini()` sends the conversation to Gemini (`gemini-3.6-flash`).
+2. **Secondary**: if Gemini is unavailable, `ANTHROPIC_API_KEY` enables Claude (`claude-sonnet-4-20250514`).
+3. **Fallback**: if hosted providers are unavailable, a rule-based responder handles common security questions using keyword matching. The chatbot never hard-fails — it degrades to the fallback silently.
+
+Before either hosted call, `_get_security_data()` pulls live numbers straight from the database (security score, device counts, active attacks, recent alerts, honeypot/mesh stats) and the provider adapter includes the safe summary in the prompt. API keys remain server-side and are never sent to the browser.
 
 ## V-8 Scanner's "AI Cortex" — Different From the Above, Deliberately
 

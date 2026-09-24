@@ -2,7 +2,8 @@
 from api.rate_limit import limiter
 from config import active_config as config
 import os
-from flask import Blueprint, jsonify, request
+from urllib.parse import quote
+from flask import Blueprint, jsonify, redirect, request
 from auth.auth_manager import auth_manager, test_smtp_connection
 from auth.decorators import login_required, admin_required
 from database.db_manager import db
@@ -93,6 +94,7 @@ def login():
 @auth_bp.route('/google/client-id', methods=['GET'])
 def google_client_id():
     """Return the configured Google OAuth Client ID (safe to expose publicly)."""
+    origin = request.host_url.rstrip('/')
     client_id = (
         db.get_setting("google_client_id", "") or
         os.environ.get("HORUS_GOOGLE_CLIENT_ID", "") or
@@ -103,10 +105,11 @@ def google_client_id():
                         "setup_guide": (
                             "1. Go to console.cloud.google.com → New project\n"
                             "2. APIs & Services → Credentials → Create OAuth 2.0 Client ID (Web)\n"
-                            "3. Authorized JS Origins: http://127.0.0.1:5050\n"
-                            "4. Copy the Client ID → Settings → Google Client ID field"
-                        )})
-    return jsonify({"client_id": client_id, "configured": True})
+                            f"3. Authorized JavaScript origins: {origin}, http://127.0.0.1:5050, and http://localhost:5050\n"
+                            "4. Authorized redirect URIs: http://127.0.0.1:5050/api/auth/google/callback and http://localhost:5050/api/auth/google/callback\n"
+                            "5. Copy the Client ID → Settings → Google Client ID field"
+                            ), "origin": origin})
+    return jsonify({"client_id": client_id, "configured": True, "origin": origin})
 
 
 @auth_bp.route('/google', methods=['POST'])
@@ -131,6 +134,26 @@ def google_login():
 
     result = auth_manager.google_auth(token, client_id)
     return jsonify(result), 200 if 'success' in result else 400
+
+
+@auth_bp.route('/google/callback', methods=['POST'])
+@limiter.limit(config.RATELIMIT_LOGIN)
+def google_callback():
+    """Receive a Google GIS credential without opening a popup window."""
+    credential = (request.form.get('credential') or '').strip()
+    client_id = (
+        db.get_setting("google_client_id", "") or
+        os.environ.get("HORUS_GOOGLE_CLIENT_ID", "") or
+        getattr(config, "GOOGLE_CLIENT_ID", "")
+    ).strip()
+    result = auth_manager.google_auth(credential, client_id) if credential else {
+        "error": "Google credential was not provided"
+    }
+    if result.get("success"):
+        token = quote(result["token"], safe="")
+        return redirect(f"{request.host_url.rstrip('/')}#google_token={token}")
+    error = quote(result.get("error", "Google Sign-In failed"), safe="")
+    return redirect(f"{request.host_url.rstrip('/')}#google_error={error}")
 
 
 @auth_bp.route('/logout', methods=['POST'])
@@ -239,9 +262,10 @@ def save_google_client_id():
       1. Go to https://console.cloud.google.com → Create or select a project
       2. APIs & Services → Credentials → Create OAuth 2.0 Client ID
       3. Application type: Web application
-      4. Authorized JavaScript origins: http://127.0.0.1:5050
-      5. Copy the Client ID (ends with .apps.googleusercontent.com)
-      6. POST it here as {"client_id": "YOUR_CLIENT_ID"}
+    4. Authorized JavaScript origins: http://127.0.0.1:5050 and http://localhost:5050
+    5. Authorized redirect URIs: http://127.0.0.1:5050/api/auth/google/callback and http://localhost:5050/api/auth/google/callback
+    6. Copy the Client ID (ends with .apps.googleusercontent.com)
+    7. POST it here as {"client_id": "YOUR_CLIENT_ID"}
     """
     data      = request.get_json(silent=True) or {}
     client_id = data.get('client_id', '').strip()

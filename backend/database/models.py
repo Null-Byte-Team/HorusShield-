@@ -36,8 +36,13 @@ CREATE TABLE IF NOT EXISTS devices (
     ip_address      TEXT,
     hostname        TEXT DEFAULT 'Unknown',
     vendor          TEXT DEFAULT 'Unknown',
-    device_type     TEXT DEFAULT 'unknown',  -- router, pc, phone, iot, server, printer, unknown
+    manufacturer    TEXT DEFAULT 'Unknown',
+    device_type     TEXT DEFAULT 'Unknown Device',
+    model           TEXT DEFAULT '',
     os_info         TEXT DEFAULT '',
+    confidence      INTEGER DEFAULT 0,
+    evidence        TEXT DEFAULT '[]',       -- JSON array of evidence strings
+    fingerprint     TEXT DEFAULT '{}',       -- JSON object of raw signals
     open_ports      TEXT DEFAULT '[]',       -- JSON array
     status          TEXT DEFAULT 'unknown',  -- trusted, unknown, blocked, suspicious
     is_gateway      INTEGER DEFAULT 0,
@@ -48,6 +53,7 @@ CREATE TABLE IF NOT EXISTS devices (
     notes           TEXT DEFAULT '',
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
 
 -- ── Attacks ──
 CREATE TABLE IF NOT EXISTS attacks (
@@ -384,7 +390,7 @@ CREATE INDEX IF NOT EXISTS idx_sessions_token ON auth_sessions(token);
 
 -- ── Default Settings ──
 INSERT OR IGNORE INTO settings (key, value, description) VALUES
-    ('demo_mode', 'true', 'Enable demo/training mode'),
+    ('demo_mode', 'false', 'Enable demo/training mode'),
     ('language', 'en', 'Interface language (en/ar)'),
     ('theme', 'dark', 'UI theme (dark/light/emergency)'),
     ('lockdown_active', 'false', 'Emergency lockdown mode'),
@@ -402,21 +408,43 @@ INSERT OR IGNORE INTO settings (key, value, description) VALUES
     ('smtp_user', '', 'SMTP login email address'),
     ('smtp_pass', '', 'SMTP login password or App Password'),
     ('smtp_from_name', 'HorusShield Security', 'Sender display name'),
-    ('google_client_id', '1002481182037-uqdbjff4ni25kjgcblacmon56q8gcdbe.apps.googleusercontent.com', 'Google OAuth 2.0 Client ID for Sign-In with Google');
+    ('google_client_id', '84532770868-ere6dbvhfi09s719g7r50rj1v49a0g1e.apps.googleusercontent.com', 'Google OAuth 2.0 Client ID for Sign-In with Google');
 """
 
 
+def _migrate_devices_table(conn):
+    """Safely add new fingerprinting columns to existing devices table if absent."""
+    try:
+        cursor = conn.execute("PRAGMA table_info(devices)")
+        cols = {row[1] for row in cursor.fetchall()}
+        new_cols = [
+            ("manufacturer", "TEXT DEFAULT 'Unknown'"),
+            ("model", "TEXT DEFAULT ''"),
+            ("confidence", "INTEGER DEFAULT 0"),
+            ("evidence", "TEXT DEFAULT '[]'"),
+            ("fingerprint", "TEXT DEFAULT '{}'"),
+        ]
+        for col_name, col_def in new_cols:
+            if col_name not in cols:
+                conn.execute(f"ALTER TABLE devices ADD COLUMN {col_name} {col_def}")
+        conn.commit()
+    except Exception:
+        pass
+
+
 def init_database(db_path=None):
-    """Initialize the database with schema."""
+    """Initialize the database with schema and apply non-destructive migrations."""
     path = db_path or DB_PATH
     dirname = os.path.dirname(path)
     if dirname:
         os.makedirs(dirname, exist_ok=True)
     conn = sqlite3.connect(path)
     conn.executescript(SCHEMA_SQL)
+    _migrate_devices_table(conn)
     conn.commit()
     conn.close()
     return path
+
 
 
 if __name__ == "__main__":

@@ -35,6 +35,12 @@ class DeviceDetector:
         self._known_macs = set()
         self._last_scan_results = []
         self._scan_count = 0
+        try:
+            from device_fingerprinting.engine import fingerprint_engine
+            fingerprint_engine.set_socketio(socketio)
+        except Exception:
+            pass
+
 
     def start(self):
         """Start the device detector background thread."""
@@ -168,12 +174,11 @@ class DeviceDetector:
             logger.error(f"Device scan error: {e}")
 
     def _handle_new_device(self, device):
-        """Handle a newly discovered device."""
+        """Handle a newly discovered device — uses fingerprint engine for classification."""
         mac = device['mac_address']
         ip = device['ip_address']
         hostname = device.get('hostname', 'Unknown')
         vendor = device.get('vendor', 'Unknown')
-        device_type = device.get('device_type', 'unknown')
         is_gateway = device.get('is_gateway', False)
 
         # Determine initial status
@@ -184,10 +189,44 @@ class DeviceDetector:
         # Port scan to gather more info
         try:
             open_ports = self.scanner.port_scan(ip, ports=[22, 80, 443, 8080, 3389, 5900, 9100])
-            if not device_type or device_type == 'unknown':
-                device_type = classify_device_type(hostname, vendor, open_ports)
         except Exception:
             open_ports = []
+
+        # ── Fingerprint engine classification ──────────────────────────────────
+        manufacturer = vendor
+        model = ""
+        os_info = "Unknown"
+        confidence = 0
+        evidence = []
+        device_type = device.get('device_type', 'Unknown Device')
+
+        try:
+            from device_fingerprinting.engine import fingerprint_engine
+            fp = fingerprint_engine.fingerprint_device(
+                ip=ip,
+                mac=mac,
+                hostname=hostname,
+                vendor=vendor,
+                is_gateway=is_gateway,
+                open_ports=open_ports,
+                force_refresh=False,
+                background_enrich=True,
+            )
+            device_type = fp.device_type
+            manufacturer = fp.vendor or vendor
+            model = fp.model or ""
+            os_info = fp.os or "Unknown"
+            confidence = fp.confidence
+            evidence = fp.evidence
+            logger.info(f"Fingerprint: {mac} → {device_type} ({fp.confidence}% confidence)")
+        except Exception as e:
+            logger.debug(f"Fingerprint engine unavailable, falling back: {e}")
+            # Fallback to legacy helper
+            try:
+                device_type = classify_device_type(hostname, vendor, open_ports)
+            except Exception:
+                device_type = "Unknown Device"
+        # ──────────────────────────────────────────────────────────────────────
 
         # Add to database
         device_id = db.add_device(
@@ -197,42 +236,45 @@ class DeviceDetector:
             vendor=vendor,
             device_type=device_type,
             status=status,
+            manufacturer=manufacturer,
+            model=model,
+            confidence=confidence,
+            evidence=json.dumps(evidence) if evidence else "[]",
         )
         logger.info(f"Device added to DB with ID {device_id}")
 
         # Update with additional info
         db.update_device(device_id,
                           open_ports=json.dumps(open_ports),
-                          is_gateway=int(is_gateway))
+                          is_gateway=int(is_gateway),
+                          os_info=os_info)
 
         # Create alert for new device
         severity = 'info' if is_gateway else 'medium'
-        alert_type = 'new_device' if status == 'unknown' else 'new_device'
 
-        alert_title = f"New {'Gateway' if is_gateway else device_type.title()} Detected"
+        alert_title = f"New {'Gateway' if is_gateway else device_type} Detected"
         alert_msg = (
             f"New device connected to the network:\n"
             f"IP: {ip}\n"
             f"MAC: {mac}\n"
             f"Hostname: {hostname}\n"
             f"Vendor: {vendor}\n"
-            f"Type: {device_type}"
+            f"Type: {device_type}\n"
+            f"Confidence: {confidence}%"
         )
 
         alert_id = db.add_alert(
-            alert_type=alert_type,
+            alert_type='new_device',
             title=alert_title,
             message=alert_msg,
             severity=severity,
             source="device_detector",
             device_id=device_id,
             metadata={
-                "mac": mac,
-                "ip": ip,
-                "hostname": hostname,
-                "vendor": vendor,
-                "device_type": device_type,
-                "open_ports": open_ports,
+                "mac": mac, "ip": ip, "hostname": hostname,
+                "vendor": vendor, "device_type": device_type,
+                "manufacturer": manufacturer, "model": model,
+                "confidence": confidence, "open_ports": open_ports,
             }
         )
 
@@ -254,11 +296,14 @@ class DeviceDetector:
                 "hostname": hostname,
                 "vendor": vendor,
                 "device_type": device_type,
+                "manufacturer": manufacturer,
+                "model": model,
+                "confidence": confidence,
                 "status": status,
                 "alert_id": alert_id,
             })
 
-        logger.info(f"New device: {mac} ({ip}) — {vendor} [{device_type}]")
+        logger.info(f"New device: {mac} ({ip}) — {vendor} [{device_type}] ({confidence}% confidence)")
 
     def _handle_unknown_device(self, device_id, device):
         """Handle an unknown/unauthorized device — Feature 3."""

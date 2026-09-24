@@ -1,17 +1,17 @@
 """
 HorusShield Advanced Conversation Engine
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Primary brain: Claude API (claude-sonnet-4-20250514)
+Primary brain: Google Gemini API (gemini-3.6-flash), then Claude
 Fallback brain: Rule-based security + general-topic handler
 
 Bugs fixed vs previous version:
-  1. _intelligent_response() was dead code — never called from ask().
-     Claude API is now the primary dispatch path.
+    1. _intelligent_response() was dead code — never called from ask().
+         Hosted AI providers are now the primary dispatch path.
   2. Animal handling was duplicated in two places; unified into one.
   3. Security topic fell through to joke responses when no keyword matched;
      now always returns a data-backed status as the safe default.
   4. `import random` repeated inside functions — hoisted to top-level.
-  5. Claude API integration added as primary path; rule-based is fallback.
+    5. Hosted AI providers are tried before the rule-based fallback.
 """
 
 import os
@@ -26,6 +26,77 @@ from database.db_manager import db
 logger = get_logger("conversation_engine", "ai")
 
 
+def _build_messages(history, user_message):
+    messages = []
+    for message in history[-6:]:
+        role = message.get("role")
+        content = message.get("content", "")
+        if role in ("user", "assistant") and content:
+            messages.append({"role": role, "content": content})
+
+    if not messages or messages[-1].get("role") != "user":
+        messages.append({"role": "user", "content": user_message})
+    return messages
+
+
+def _call_gemini(system_prompt, user_message, history):
+    """Call Gemini, returning its text reply or None when unavailable."""
+    try:
+        import urllib.parse
+        import urllib.request
+        import json as _json
+
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            return None
+
+        contents = []
+        for message in _build_messages(history, user_message):
+            contents.append({
+                "role": "model" if message["role"] == "assistant" else "user",
+                "parts": [{"text": message["content"]}],
+            })
+
+        for model in ["gemini-3.6-flash", "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]:
+            endpoint = (
+                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?"
+                + urllib.parse.urlencode({"key": api_key})
+            )
+            payload = _json.dumps({
+                "system_instruction": {"parts": [{"text": system_prompt}]},
+                "contents": contents,
+                "generationConfig": {"maxOutputTokens": 1000},
+            }).encode("utf-8")
+            request = urllib.request.Request(
+                endpoint,
+                data=payload,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(request, timeout=10) as response:
+                    data = _json.loads(response.read())
+                candidates = data.get("candidates", [])
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    text = "".join(part.get("text", "") for part in parts).strip()
+                    if text:
+                        return text
+            except Exception as model_err:
+                logger.debug(f"Gemini model {model} attempt failed: {model_err}")
+                continue
+    except Exception as error:
+        if hasattr(error, "read"):
+            try:
+                detail = error.read().decode("utf-8", errors="replace")[:300]
+            except Exception:
+                detail = str(error)
+            logger.warning(f"Gemini API call failed (trying Claude/fallback): {detail}")
+        else:
+            logger.warning(f"Gemini API call failed (trying Claude/fallback): {error}")
+    return None
+
+
 def _call_claude(system_prompt, user_message, history):
     """
     Call Anthropic Claude API (claude-sonnet-4-20250514).
@@ -38,15 +109,7 @@ def _call_claude(system_prompt, user_message, history):
         if not api_key:
             return None
 
-        messages = []
-        for m in history[-6:]:
-            role = m.get("role")
-            content = m.get("content", "")
-            if role in ("user", "assistant") and content:
-                messages.append({"role": role, "content": content})
-
-        if not messages or messages[-1].get("role") != "user":
-            messages.append({"role": "user", "content": user_message})
+        messages = _build_messages(history, user_message)
 
         payload = _json.dumps({
             "model": "claude-sonnet-4-20250514",
@@ -156,10 +219,11 @@ class AdvancedHorusAssistant:
     """
     HorusShield AI assistant.
 
-    Dispatch order for every query:
-      1. Claude API  (with live security context injected into the message)
-      2. Rule-based security handler  (if topic==security and Claude unavailable)
-      3. Rule-based general/playful handler  (catch-all fallback)
+        Dispatch order for every query:
+            1. Gemini API
+            2. Claude API
+            3. Rule-based security handler
+            4. Rule-based general/playful handler
     """
 
     _SYSTEM_EN = (
@@ -252,6 +316,24 @@ class AdvancedHorusAssistant:
             for m in memory.memory[:-1]
         ]
         return _call_claude(system, enriched_query, hist)
+
+    def _try_gemini(self, query, memory, security_data, language):
+        system = self._SYSTEM_AR if language == "ar" else self._SYSTEM_EN
+        ctx = self._live_context(security_data)
+        hist = [{"role": m["role"], "content": m["content"]} for m in memory.memory[:-1]]
+        return _call_gemini(system, query + ctx, hist)
+
+    @staticmethod
+    def _live_context(security_data):
+        if not security_data:
+            return ""
+        devices = security_data.get("devices", {})
+        return (
+            f"\n\n[LIVE NETWORK CONTEXT — score:{security_data.get('security_score', 'N/A')}/100 | "
+            f"active_attacks:{security_data.get('active_attacks', 0)} | "
+            f"devices:{devices.get('total', 0)} (unknown:{devices.get('unknown', 0)}) | "
+            f"unread_alerts:{security_data.get('unacknowledged_alerts', 0)}]"
+        )
 
     def _traffic_summary(self, data, language):
         traffic = data.get("traffic", {}) or {}
@@ -634,7 +716,13 @@ class AdvancedHorusAssistant:
             topic         = memory.detect_topic()
             security_data = self._get_security_data()
 
-            # 1. Claude API
+            # 1. Gemini API, then Claude API
+            gemini_reply = self._try_gemini(query, memory, security_data, language)
+            if gemini_reply:
+                memory.add_message("assistant", gemini_reply)
+                logger.info(f"Gemini API reply — user={user_id} topic={topic}")
+                return gemini_reply
+
             claude_reply = self._try_claude(query, memory, security_data, language)
             if claude_reply:
                 memory.add_message("assistant", claude_reply)
@@ -676,7 +764,7 @@ class AdvancedHorusAssistant:
         """
         Like ask() but returns (response_str, engine_name) so callers can
         report which engine produced the answer.
-        engine_name: 'claude' | 'rule_security' | 'rule_general'
+        engine_name: 'gemini' | 'claude' | 'rule_security' | 'rule_general'
         """
         try:
             memory        = self._get_or_create_conversation(user_id)
@@ -684,7 +772,13 @@ class AdvancedHorusAssistant:
             topic         = memory.detect_topic()
             security_data = self._get_security_data()
 
-            # 1. Claude API
+            # 1. Gemini API, then Claude API
+            gemini_reply = self._try_gemini(query, memory, security_data, language)
+            if gemini_reply:
+                memory.add_message("assistant", gemini_reply)
+                logger.info(f"Gemini API reply — user={user_id} topic={topic}")
+                return gemini_reply, "gemini"
+
             claude_reply = self._try_claude(query, memory, security_data, language)
             if claude_reply:
                 memory.add_message("assistant", claude_reply)

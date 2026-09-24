@@ -15,13 +15,7 @@ def get_stats():
         return jsonify(db.get_dashboard_stats())
     except Exception as e:
         logger.error(f"stats: {e}")
-        return jsonify({
-            "security_score": 85, "score_trend": "stable",
-            "devices": {"total": 0, "trusted": 0, "unknown": 0, "blocked": 0},
-            "active_attacks": 0, "unacknowledged_alerts": 0,
-            "lockdown_active": False, "demo_mode": False,
-            "traffic": {},
-        }), 200
+        return jsonify({"error": "Dashboard data unavailable"}), 503
 
 
 @dashboard_bp.route('/traffic/history', methods=['GET'])
